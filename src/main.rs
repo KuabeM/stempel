@@ -100,19 +100,17 @@ fn write_time_to_file( dat: TimeDuration, file_name: &PathBuf) {
 
     // Open file and read content into string, TODO: Handle error properly
     // TODO: add case for non existing file
-    let mut storage = match File::open( file_name ) {
-        Err(storage) => panic!("Could not open: {}.", storage),
-        Ok(storage) => storage,
-    };
-    let mut content = String::new();
-    storage.read_to_string( &mut content).expect("Reading Error...");
+    let mut content = match read_file_to_string( &file_name) {
+        Ok(string)=> string,
+        Err(e)    => e,
+    }; 
 
     // add TimeDuration to end of content
     content.push_str( &dat.to_string() );
     content.push_str("\n");
 
     // create new file with same name, FIXME: can't write to opened file, have to create new one
-    storage = File::create(file_name).expect("Could not create new file for writing.");
+    let mut storage = File::create(file_name).expect("Could not create new file for writing.");
 
     // Write whole content to file
     // TODO: return error message
@@ -148,9 +146,10 @@ fn calc_duration( duration: f64 ) -> TimeDuration {
 fn get_start_time( file_name: &PathBuf) -> f64 {
 
     // open file and read content to string
-    let mut storage = File::open(file_name).expect("Opening Error...");
-    let mut content = String::new();
-    storage.read_to_string( &mut content).expect("Reading Error...");
+    let content = match read_file_to_string( &file_name) {
+        Ok(string)=> string,
+        Err(e)    => e,
+    }; 
 
     // get last line
     let split =  match content.lines().last() {
@@ -192,15 +191,16 @@ fn write_start_to_file( file_name: &PathBuf ) {
  */
 fn delete_start_in_file( file_name: &PathBuf) {
     // open file and read content to string
-    let mut storage = File::open(file_name).expect("Opening Error...");
-    let mut content = String::new();
-    storage.read_to_string( &mut content).expect("Reading Error...");
+    let mut content = match read_file_to_string( &file_name) {
+        Ok(string)=> string,
+        Err(e)    => e,
+    };
 
     // delete last line, has always length 17
     let length = content.len();
     content.truncate( length - 17);
 
-    storage = File::create(file_name).expect("Something..");
+    let mut storage = File::create(file_name).expect("Something..");
 
     // Write whole content to file
     storage.write( content.as_bytes()).expect("Deleting start time: Could not write back.");
@@ -227,9 +227,10 @@ fn print_stats( file_name: &PathBuf ) {
     println!("Printing Stats:");
     println!("----------------------------");
 
-    let mut storage = File::open(file_name).expect("Could not open file.");
-    let mut content = String::new();
-    storage.read_to_string( &mut content).expect("Could not read file");
+    let content = match read_file_to_string( &file_name) {
+        Ok(string)=> string,
+        Err(e)    => e,
+    }; 
 
     for line in content.lines() {
         let td = get_td(line.to_owned());
@@ -243,4 +244,25 @@ fn print_stats( file_name: &PathBuf ) {
 fn calc_stats( file_name: &PathBuf) {
     
     println!("Calculate statistics");
+}
+
+/* Read content from file
+ * take file name and return content as String
+ */
+fn read_file_to_string( file_name: &PathBuf ) -> Result<String, String> {
+
+    let mut storage = match File::open(file_name) {
+        Ok(stor)    => stor,
+        Err(err)    => return Err( format!("Open Error: {}", err)),
+    };
+    
+    let mut content = String::new();
+    match storage.read_to_string( &mut content) {
+        Ok(_)  => Ok(content),
+        Err(_) => {
+            println!("Could not read content of file!");
+            Err(String::from(""))
+        },
+    }
+
 }
