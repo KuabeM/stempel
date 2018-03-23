@@ -212,7 +212,7 @@ fn delete_start_in_file( file_name: &PathBuf) {
 fn get_td( content: String ) -> TimeDuration {
 
     let split: Vec<&str> = content.split(',').collect();
-    // add error handling if split is not a proper array
+    // TODO: add error handling if split is not a proper array
     TimeDuration { year: split[0].parse().unwrap(),
                             month: split[1].parse().unwrap(),
                             day: split[2].parse().unwrap(),
@@ -236,4 +236,11 @@ fn print_stats( file_name: &PathBuf ) {
         println!("{}", td);
     }
     println!("----------------------------");
+}
+
+/* Calculate Statistics for months
+ */
+fn calc_stats( file_name: &PathBuf) {
+    
+    println!("Calculate statistics");
 }
