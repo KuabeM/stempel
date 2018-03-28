@@ -84,7 +84,8 @@ fn main() {
             "stop"  => write_time_to_file( calc_duration(get_start_time( &path )) , &path),
             "show"  => {
                 print_stats( &path );
-                calc_stats( &path )},
+                calc_stats( &path )
+            },
             "version"=> println!("Version: {}", VERSION),
             _       => println!("no implemented. print help or similar"),
         }
@@ -247,8 +248,15 @@ fn calc_stats( file_name: &PathBuf) {
     
     println!("Calculate statistics");
 
-    let content = read_file_to_string( file_name );
+    let content = match read_file_to_string( file_name ){
+        Ok(stor)    => stor,
+        Err(err)    => format!("Open Error: {}", err),
+    };
+    let lines: Vec<&str> = content.split('\n').collect();
 
+    for lin in lines.iter() { // indexed iter?
+        println!("test");
+    }
     
 }
 
