@@ -82,7 +82,9 @@ fn main() {
         match args[1].to_string().as_ref() {
             "start" => write_start_to_file( &path ),
             "stop"  => write_time_to_file( calc_duration(get_start_time( &path )) , &path),
-            "show"  => print_stats( &path ),
+            "show"  => {
+                print_stats( &path );
+                calc_stats( &path )},
             "version"=> println!("Version: {}", VERSION),
             _       => println!("no implemented. print help or similar"),
         }
@@ -244,6 +246,10 @@ fn print_stats( file_name: &PathBuf ) {
 fn calc_stats( file_name: &PathBuf) {
     
     println!("Calculate statistics");
+
+    let content = read_file_to_string( file_name );
+
+    
 }
 
 /* Read content from file
