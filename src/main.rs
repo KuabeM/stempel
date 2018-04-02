@@ -212,15 +212,15 @@ fn delete_start_in_file( file_name: &PathBuf) {
 
 /* Get TimeDuration from String
  */
-fn get_td( content: String ) -> TimeDuration {
+fn get_td( content: &String ) -> TimeDuration {
 
     let split: Vec<&str> = content.split(',').collect();
+
     // TODO: add error handling if split is not a proper array
     TimeDuration { year: split[0].parse().unwrap(),
                             month: split[1].parse().unwrap(),
                             day: split[2].parse().unwrap(),
                             duration: split[3].parse().unwrap() }
-
 }
 
 /* Print curent content of file
@@ -236,7 +236,7 @@ fn print_stats( file_name: &PathBuf ) {
     }; 
 
     for line in content.lines() {
-        let td = get_td(line.to_owned());
+        let td = get_td(&line.to_owned());
         println!("{}", td);
     }
     println!("----------------------------");
@@ -252,12 +252,12 @@ fn calc_stats( file_name: &PathBuf) {
         Ok(stor)    => stor,
         Err(err)    => format!("Open Error: {}", err),
     };
-    let lines: Vec<&str> = content.split('\n').collect();
-
-    for lin in lines.iter() { // indexed iter?
-        println!("test");
-    }
+    let mut lines: Vec<&str> = content.split('\n').collect();
+    lines.pop();
     
+    let line_td: Vec<TimeDuration> = lines.into_iter().map(|s| get_td( &s.to_string() )).collect();
+    
+    println!("{:?}", line_td);
 }
 
 /* Read content from file
