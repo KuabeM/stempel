@@ -24,7 +24,7 @@ use std::fmt;
 use std::env;
 
 /**** CONSTANTS ****/
-static VERSION: &'static str = "0.2.0";
+static VERSION: &'static str = "0.3.0";
 
 /****  STRUCTS  ****/
 #[derive(Debug)]
