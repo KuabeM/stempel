@@ -257,7 +257,7 @@ fn calc_stats( file_name: &PathBuf) {
     
     let line_td: Vec<TimeDuration> = lines.into_iter().map(|s| get_td( &s.to_string() )).collect();
     
-    println!("{:?}", line_td);
+    let months = get_months(&line_td);
 }
 
 /* Read content from file
@@ -279,4 +279,18 @@ fn read_file_to_string( file_name: &PathBuf ) -> Result<String, String> {
         },
     }
 
+}
+
+/* get months in Vector of TimeDurations
+ */
+fn get_months( line_td: &Vec<TimeDuration>) -> Vec<i32> {
+    let mut months: Vec<i32> = Vec::new();
+
+    for item in line_td.iter() {
+        if months.iter().find(|x| x == &&item.month) == None {
+            months.push(item.month);
+        }
+    }
+    println!("{:?}", months);
+    months
 }
