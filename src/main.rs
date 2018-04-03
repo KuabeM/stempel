@@ -6,9 +6,10 @@
  * Date: 10/03/2018
  *
  * TODO:
- * - file as path, path as constant or config file
+ * - path as constant or config file
  * - error handling in file writing functions
- * - print current content of file
+ * - handling of stopping on the next day
+ * - add option for writing custom start time/duration to file
  * 
  * 
  */
