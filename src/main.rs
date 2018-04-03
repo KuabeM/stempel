@@ -229,12 +229,12 @@ fn print_stats( file_name: &PathBuf ) {
 
     println!("Printing Stats:");
     println!("----------------------------");
-
+    // read file content
     let content = match read_file_to_string( &file_name) {
         Ok(string)=> string,
         Err(e)    => e,
     }; 
-
+    // convert lines to TimeDurations and print them
     for line in content.lines() {
         let td = get_td(&line.to_owned());
         println!("{}", td);
@@ -246,30 +246,38 @@ fn print_stats( file_name: &PathBuf ) {
  */
 fn calc_stats( file_name: &PathBuf) {
     
-    println!("Calculate statistics");
-
+    println!("Time per month:");
+    // read file content to string
     let content = match read_file_to_string( file_name ){
         Ok(stor)    => stor,
         Err(err)    => format!("Open Error: {}", err),
     };
+    // get all lines, last one is emtpy so we pop it
     let mut lines: Vec<&str> = content.split('\n').collect();
     lines.pop();
-    
+    // convert strings in each line to TimeDuration
     let line_td: Vec<TimeDuration> = lines.into_iter().map(|s| get_td( &s.to_string() )).collect();
-    
+    // get all months as Vector
     let months = get_months(&line_td);
+
+    // sum up durations in the same month
+    for month in months.iter() {
+        let sum_dur: f64 = line_td.iter().filter(|x| x.month == *month).map(|x| x.duration).sum();
+        //let sum_dur = month_td.iter().map(|x| x.month).sum();
+        println!("Sum for {:>2}: {:>5.02}h",month, sum_dur);
+    }
 }
 
 /* Read content from file
  * take file name and return content as String
  */
 fn read_file_to_string( file_name: &PathBuf ) -> Result<String, String> {
-
+    // open file, return error message
     let mut storage = match File::open(file_name) {
         Ok(stor)    => stor,
         Err(err)    => return Err( format!("Open Error: {}", err)),
     };
-    
+    // read file to string and return it, error returns empty string
     let mut content = String::new();
     match storage.read_to_string( &mut content) {
         Ok(_)  => Ok(content),
@@ -285,12 +293,12 @@ fn read_file_to_string( file_name: &PathBuf ) -> Result<String, String> {
  */
 fn get_months( line_td: &Vec<TimeDuration>) -> Vec<i32> {
     let mut months: Vec<i32> = Vec::new();
-
+    // iterate of Vector and find those which are not in the months vector and add them
     for item in line_td.iter() {
         if months.iter().find(|x| x == &&item.month) == None {
             months.push(item.month);
         }
     }
-    println!("{:?}", months);
+
     months
 }
