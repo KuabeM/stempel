@@ -216,7 +216,7 @@ fn delete_start_in_file( file_name: &PathBuf) {
 fn get_td( content: &String ) -> TimeDuration {
 
     let split: Vec<&str> = content.split(',').collect();
-
+    
     // TODO: add error handling if split is not a proper array
     TimeDuration { year: split[0].parse().unwrap(),
                             month: split[1].parse().unwrap(),
