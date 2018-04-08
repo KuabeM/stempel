@@ -16,6 +16,8 @@
 
 /****  CRATES   ****/
 extern crate time;
+#[macro_use]
+extern crate log;
 
 /****  MODULES  ****/
 use std::fs::File;
@@ -102,16 +104,23 @@ fn main() {
  */
 fn write_time_to_file( dat: TimeDuration, file_name: &PathBuf) {
 
-    // Open file and read content into string, TODO: Handle error properly
-    // TODO: add case for non existing file
-    let mut content = match read_file_to_string( &file_name) {
-        Ok(string)=> string,
-        Err(e)    => e,
+    // Open file and read content into string, 
+    let mut content_opt = match read_file_to_string( &file_name) {
+        Ok(string)=> Some(string),
+        Err(e)    => {
+            error!("Failed to read: {}", e);
+            None
+        },
     }; 
 
     // add TimeDuration to end of content
-    content.push_str( &dat.to_string() );
-    content.push_str("\n");
+    let mut content = String::new();
+    if content_opt == None {
+        content = dat.to_string();
+    } else {
+        content = format!("{}{}", content_opt.unwrap(), &dat.to_string() );
+        content.push_str("\n");
+    }
 
     // create new file with same name, FIXME: can't write to opened file, have to create new one
     let mut storage = File::create(file_name).expect("Could not create new file for writing.");
@@ -216,7 +225,7 @@ fn delete_start_in_file( file_name: &PathBuf) {
 fn get_td( content: &String ) -> TimeDuration {
 
     let split: Vec<&str> = content.split(',').collect();
-    
+
     // TODO: add error handling if split is not a proper array
     TimeDuration { year: split[0].parse().unwrap(),
                             month: split[1].parse().unwrap(),

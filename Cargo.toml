@@ -5,3 +5,4 @@ authors = ["Korbinian Maier <korbinian.maier@tum.de>"]
 
 [dependencies]
 time = "0.1"
+log = "0.4.1"
