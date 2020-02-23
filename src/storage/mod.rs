@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::*;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-enum WorkType {
+pub enum WorkType {
     Work,
     Start,
     Stop,
@@ -38,11 +38,8 @@ pub struct WorkSet {
 }
 
 impl WorkSet {
-    pub fn new(duration: Duration) -> Self {
-        WorkSet {
-            ty: WorkType::Work,
-            duration,
-        }
+    pub fn new(ty: WorkType, duration: Duration) -> Self {
+        WorkSet { ty, duration }
     }
 }
 
@@ -64,11 +61,15 @@ impl WorkStorage {
         }
     }
 
-    pub fn new() -> Self {
+    fn new() -> Self {
         WorkStorage {
             name: String::new(),
             work_sets: Vec::new(),
         }
+    }
+
+    pub fn add_set(&mut self, set: WorkSet) {
+        self.work_sets.push(set);
     }
 }
 
