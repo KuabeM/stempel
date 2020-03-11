@@ -1,4 +1,5 @@
 use std::convert::TryFrom;
+use std::fmt;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
@@ -31,6 +32,16 @@ impl TryFrom<&str> for WorkType {
     }
 }
 
+impl fmt::Display for WorkType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WorkType::Start => write!(f, "Start"),
+            WorkType::Work => write!(f, " Work"),
+            WorkType::Stop => write!(f, " Stop"),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WorkSet {
     ty: WorkType,
@@ -40,6 +51,12 @@ pub struct WorkSet {
 impl WorkSet {
     pub fn new(ty: WorkType, duration: Duration) -> Self {
         WorkSet { ty, duration }
+    }
+}
+
+impl fmt::Display for WorkSet {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{0:>10}: {1:>4}s", self.ty, self.duration.as_secs())
     }
 }
 
@@ -61,6 +78,15 @@ impl WorkStorage {
         }
     }
 
+    fn to_json(&self) -> Result<String, TimeError> {
+        serde_json::to_string(&self).map_err(|e| TimeError::SerializationError(e.to_string()))
+    }
+
+    pub fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), TimeError> {
+        std::fs::write(path, self.to_json()?).map_err(|e| TimeError::IoError(e.to_string()))?;
+        Ok(())
+    }
+
     fn new() -> Self {
         WorkStorage {
             name: String::new(),
@@ -70,6 +96,20 @@ impl WorkStorage {
 
     pub fn add_set(&mut self, set: WorkSet) {
         self.work_sets.push(set);
+    }
+
+    pub fn stats(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl fmt::Display for WorkStorage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:", self.name)?;
+        for set in self.work_sets.iter() {
+            write!(f, "\n\t{}", set)?;
+        }
+        Ok(())
     }
 }
 
@@ -111,6 +151,7 @@ fn serde_ok() {
 
     let store_ser = serde_json::to_string(&store).expect("Failed to serialize");
     assert_eq!(store_raw.replace('\n', "").replace(' ', ""), store_ser);
+    assert_eq!(store_ser, store.to_json().expect("Failed to serialize"));
 }
 
 #[test]
