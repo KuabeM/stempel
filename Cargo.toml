@@ -2,7 +2,7 @@
 name = "working-time-calc"
 version = "0.1.0"
 authors = ["Korbinian Maier <korbinian.maier@tum.de>"]
-license = "Apache-2.0 OR MIT"
+license = "MIT"
 edition = "2018"
 
 [dependencies]
