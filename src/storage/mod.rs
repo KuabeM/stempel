@@ -1,3 +1,4 @@
+use failure::{bail, format_err, Error};
 use std::convert::TryFrom;
 use std::fmt;
 use std::fs::File;
@@ -7,8 +8,6 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
-use crate::error::*;
-
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum WorkType {
     Work,
@@ -17,17 +16,14 @@ pub enum WorkType {
 }
 
 impl TryFrom<&str> for WorkType {
-    type Error = TimeError;
+    type Error = Error;
 
     fn try_from(input: &str) -> Result<Self, Self::Error> {
         match input.to_lowercase().as_str() {
             "work" => Ok(WorkType::Work),
             "start" => Ok(WorkType::Start),
             "stop" => Ok(WorkType::Stop),
-            _ => Err(TimeError::SerializationError(format!(
-                "Unknown type {}",
-                input
-            ))),
+            _ => bail!("Failed to parse {} into WorkType", input),
         }
     }
 }
@@ -67,29 +63,34 @@ pub struct WorkStorage {
 }
 
 impl WorkStorage {
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, TimeError> {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         match File::open(path) {
             Ok(f) => {
                 let reader = BufReader::new(f);
                 serde_json::from_reader(reader)
-                    .map_err(|e| TimeError::SerializationError(e.to_string()))
+                    .map_err(|e| format_err!("Failed to deserialize json: {}", e))
             }
-            Err(_) => Ok(WorkStorage::new()),
+            Err(_) => {
+                println!("Enter your name: ");
+                let mut buffer = String::new();
+                std::io::stdin().read_line(&mut buffer)?;
+                Ok(WorkStorage::new(buffer.trim_end().to_string()))
+            }
         }
     }
 
-    fn to_json(&self) -> Result<String, TimeError> {
-        serde_json::to_string(&self).map_err(|e| TimeError::SerializationError(e.to_string()))
+    fn to_json(&self) -> Result<String, Error> {
+        serde_json::to_string(&self).map_err(|e| format_err!("Failed to serialize to json: {}", e))
     }
 
-    pub fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), TimeError> {
-        std::fs::write(path, self.to_json()?).map_err(|e| TimeError::IoError(e.to_string()))?;
+    pub fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), Error> {
+        std::fs::write(path, self.to_json()?)?;
         Ok(())
     }
 
-    fn new() -> Self {
+    fn new(name: String) -> Self {
         WorkStorage {
-            name: String::new(),
+            name,
             work_sets: Vec::new(),
         }
     }
@@ -100,6 +101,22 @@ impl WorkStorage {
 
     pub fn stats(&self) -> String {
         self.to_string()
+    }
+
+    pub fn try_start(&self) -> Result<Duration, Error> {
+        let start = self
+            .work_sets
+            .iter()
+            .find(|w| w.ty == WorkType::Start)
+            .map(|w| w.duration);
+        match start {
+            Some(s) => Ok(s),
+            None => bail!("You want to stop but you never started, strange work ethics my friend"),
+        }
+    }
+
+    pub fn del_start(&mut self) {
+        self.work_sets.retain(|w| w.ty != WorkType::Start);
     }
 }
 
@@ -116,18 +133,13 @@ impl fmt::Display for WorkStorage {
 #[test]
 fn worktype_parses() {
     let w = "work";
-    assert_eq!(WorkType::try_from(w), Ok(WorkType::Work));
+    assert_eq!(WorkType::try_from(w).unwrap(), WorkType::Work);
     let w = "start";
-    assert_eq!(WorkType::try_from(w), Ok(WorkType::Start));
+    assert_eq!(WorkType::try_from(w).unwrap(), WorkType::Start);
     let w = "stop";
-    assert_eq!(WorkType::try_from(w), Ok(WorkType::Stop));
+    assert_eq!(WorkType::try_from(w).unwrap(), WorkType::Stop);
     let w = "something";
-    assert_eq!(
-        WorkType::try_from(w),
-        Err(TimeError::SerializationError(
-            "Unknown type something".to_string()
-        ))
-    );
+    assert!(WorkType::try_from(w).is_err());
 }
 
 #[test]
