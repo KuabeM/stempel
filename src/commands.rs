@@ -37,7 +37,7 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     }
 
     store.del_start();
-    store.add_set(WorkSet::new(WorkType::Work, duration, now));
+    store.add_set(WorkSet::new(WorkType::Work, duration, start));
     store.write(&storage)?;
     println!(
         "You worked {}s today. Enjoy your evening :)",

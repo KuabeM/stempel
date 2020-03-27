@@ -58,12 +58,14 @@ impl WorkSet {
 
 impl fmt::Display for WorkSet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let dur = chrono::Duration::from_std(self.duration).map_err(|_| fmt::Error)?;
         write!(
             f,
-            "{} {:>10}: {:>4}s",
-            self.start,
+            "{} on {}: {:>02}:{:>02} h",
             self.ty,
-            self.duration.as_secs()
+            self.start.format("%d/%m/%Y, %H:%M (%a)"),
+            dur.num_hours(),
+            dur.num_minutes()
         )
     }
 }
