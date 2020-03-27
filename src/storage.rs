@@ -170,11 +170,12 @@ fn serde_ok() {
         "work_sets": [
             {
                 "ty": "Work",
-                "duration": {"secs": 2, "nanos": 0}
+                "duration": {"secs": 2, "nanos": 0},
+                "start": "2020-03-27T10:22:12.755844511+00:00"
             }
         ]
     }"#;
-    let store: WorkStorage = serde_json::from_str(store_raw).expect("Failed to deserialize");
+    let mut store: WorkStorage = serde_json::from_str(store_raw).expect("Failed to deserialize");
     assert_eq!(store.name, "test");
     assert_eq!(store.work_sets.first().unwrap().ty, WorkType::Work);
     assert_eq!(
@@ -183,6 +184,10 @@ fn serde_ok() {
     );
 
     let store_ser = serde_json::to_string(&store).expect("Failed to serialize");
+    let dt: DateTime<Local> = DateTime::parse_from_rfc3339("2020-03-27T10:22:12.755844511+00:00")
+        .unwrap()
+        .into();
+    store.work_sets[0].start = dt;
     assert_eq!(store_raw.replace('\n', "").replace(' ', ""), store_ser);
     assert_eq!(store_ser, store.to_json().expect("Failed to serialize"));
 }

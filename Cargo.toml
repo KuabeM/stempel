@@ -9,6 +9,8 @@ categories = ["command-line-utilities"]
 keywords = ["time", "tracking", "management", "clock", "punch"]
 repository = "https://github.com/KuabeM/stempel"
 
+exclude = [".github/*"]
+
 [badges]
 maintenance = { status = "actively-developed" }
 
