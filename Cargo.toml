@@ -1,16 +1,24 @@
 [package]
-name = "working-time-calc"
+name = "stempel"
 version = "0.1.0"
 authors = ["Korbinian Maier <korbinian.maier@tum.de>"]
 license = "MIT"
 edition = "2018"
+readme = "README.md"
+categories = ["command-line-utilities"]
+keywords = ["time", "tracking", "management", "clock", "punch"]
+repository = "https://github.com/KuabeM/stempel"
+
+[badges]
+maintenance = { status = "actively-developed" }
 
 [dependencies]
-# time = "0.1"
 failure = "0.1"
 log = "0.4"
 env_logger = "0.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-
 structopt = "0.3"
+
+[profile.release]
+lto = true
