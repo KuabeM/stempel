@@ -1,5 +1,5 @@
 use chrono::{DateTime, Local};
-use failure::{Error, bail};
+use failure::{bail, Error};
 use log::{info, warn};
 use std::path::Path;
 use std::time::Duration;

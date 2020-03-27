@@ -1,5 +1,5 @@
 use common_failures::quick_main;
-use failure::{Error};
+use failure::Error;
 use log::{debug, info, warn};
 use std::path::PathBuf;
 use structopt::StructOpt;
