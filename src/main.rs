@@ -1,5 +1,6 @@
+use common_failures::quick_main;
+use failure::{Error};
 use log::{debug, info, warn};
-use std::error::Error;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -30,7 +31,7 @@ enum Opt {
     },
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn run() -> Result<(), Error> {
     env_logger::init();
 
     match Opt::from_args() {
@@ -51,3 +52,5 @@ fn main() -> Result<(), Box<dyn Error>> {
     debug!("Finished this run");
     Ok(())
 }
+
+quick_main!(run);

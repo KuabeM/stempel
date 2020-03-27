@@ -1,5 +1,5 @@
 use chrono::{DateTime, Local};
-use failure::Error;
+use failure::{Error, bail};
 use log::{info, warn};
 use std::path::Path;
 use std::time::Duration;
@@ -18,6 +18,12 @@ pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 }
 
 pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
+    if !storage.as_ref().exists() {
+        bail!(
+            "There is no time storage {:?}, start working first. It creates the file if necessary",
+            storage.as_ref()
+        );
+    }
     let mut store = WorkStorage::from_file(&storage)?;
     let start = store.try_start()?;
     let now: DateTime<Local> = Local::now();
