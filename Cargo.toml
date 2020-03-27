@@ -5,6 +5,7 @@ authors = ["Korbinian Maier <korbinian.maier@tum.de>"]
 license = "MIT"
 edition = "2018"
 readme = "README.md"
+description = "Track the time you spent working"
 categories = ["command-line-utilities"]
 keywords = ["time", "tracking", "management", "clock", "punch"]
 repository = "https://github.com/KuabeM/stempel"
