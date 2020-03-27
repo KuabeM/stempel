@@ -1,11 +1,11 @@
-# Working Time Calculator
+# Stempel
 
 Small utility to store and calculate the time spent at work.
 
 ## Usage
 
 ```bash
-  working-time-calc <SUBCOMMAND> -s <file>
+  stempel <SUBCOMMAND> -s <file>
 ```
 
 where the available subcommands are
@@ -16,8 +16,10 @@ where the available subcommands are
 
 ## Planned Features
 
-  - Statistics: pretty printinng, provide weekly, monthly,... statistics
-  - Tracking: allow to specify start and stop time as cli arg
+  - [ ] Statistics: pretty printinng, provide weekly, monthly,... statistics
+  - [ ] Tracking: allow to specify start and stop time as cli arg
+  - [ ] Tracking: cancle started work
+  - [ ] Storage: don't store as seconds and nanoseconds, use something more verbose
 
 ## License
 
