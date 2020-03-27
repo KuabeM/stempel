@@ -1,5 +1,7 @@
 # Stempel
 
+![Build](https://github.com/KuabeM/stempel/workflows/build-master/badge.svg?branch=master) ![Crates.io](https://img.shields.io/crates/v/stempel.svg) [![License](https://img.shields.io/crates/l/stempel.svg)](#license)
+
 Small utility to store and calculate the time spent at work.
 
 ## Usage
