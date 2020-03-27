@@ -1,14 +1,16 @@
+use chrono::{DateTime, Local};
 use failure::Error;
-use log::info;
+use log::{info, warn};
 use std::path::Path;
+use std::time::Duration;
 
 use crate::storage::*;
 
 pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let mut store = WorkStorage::from_file(&storage)?;
-    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?;
-
-    store.add_set(WorkSet::new(WorkType::Start, now));
+    let now = Duration::new(0, 0);
+    let date: DateTime<Local> = Local::now();
+    store.add_set(WorkSet::new(WorkType::Start, now, date));
 
     info!("store: {:?}", store);
     store.write(&storage)?;
@@ -18,14 +20,22 @@ pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let mut store = WorkStorage::from_file(&storage)?;
     let start = store.try_start()?;
-    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?;
+    let now: DateTime<Local> = Local::now();
+    let duration: Duration = now.signed_duration_since(start).to_std()?;
+    if duration > Duration::new(26 * 60 * 60, 0) {
+        warn!(
+            "{}, you worked more than a day? It's been {}s",
+            store.name(),
+            duration.as_secs()
+        );
+    }
 
     store.del_start();
-    store.add_set(WorkSet::new(WorkType::Work, now - start));
+    store.add_set(WorkSet::new(WorkType::Work, duration, now));
     store.write(&storage)?;
     println!(
         "You worked {}s today. Enjoy your evening :)",
-        (now - start).as_secs()
+        duration.as_secs()
     );
     Ok(())
 }

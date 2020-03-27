@@ -1,3 +1,4 @@
+use chrono::{DateTime, Local};
 use failure::{bail, format_err, Error};
 use std::convert::TryFrom;
 use std::fmt;
@@ -42,17 +43,28 @@ impl fmt::Display for WorkType {
 pub struct WorkSet {
     ty: WorkType,
     duration: Duration,
+    start: DateTime<Local>,
 }
 
 impl WorkSet {
-    pub fn new(ty: WorkType, duration: Duration) -> Self {
-        WorkSet { ty, duration }
+    pub fn new(ty: WorkType, duration: Duration, start: DateTime<Local>) -> Self {
+        WorkSet {
+            ty,
+            duration,
+            start,
+        }
     }
 }
 
 impl fmt::Display for WorkSet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{0:>10}: {1:>4}s", self.ty, self.duration.as_secs())
+        write!(
+            f,
+            "{} {:>10}: {:>4}s",
+            self.start,
+            self.ty,
+            self.duration.as_secs()
+        )
     }
 }
 
@@ -95,6 +107,10 @@ impl WorkStorage {
         }
     }
 
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
     pub fn add_set(&mut self, set: WorkSet) {
         self.work_sets.push(set);
     }
@@ -103,15 +119,18 @@ impl WorkStorage {
         self.to_string()
     }
 
-    pub fn try_start(&self) -> Result<Duration, Error> {
+    pub fn try_start(&self) -> Result<DateTime<Local>, Error> {
         let start = self
             .work_sets
             .iter()
             .find(|w| w.ty == WorkType::Start)
-            .map(|w| w.duration);
+            .map(|w| w.start);
         match start {
             Some(s) => Ok(s),
-            None => bail!("You want to stop but you never started, strange work ethics my friend"),
+            None => bail!(
+                "You want to stop but you never started, strange work ethics, {}",
+                self.name
+            ),
         }
     }
 

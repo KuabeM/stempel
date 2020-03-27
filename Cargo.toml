@@ -13,6 +13,7 @@ repository = "https://github.com/KuabeM/stempel"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
+chrono = { version = "0.4", features = ["serde"] }
 failure = "0.1"
 log = "0.4"
 env_logger = "0.5"

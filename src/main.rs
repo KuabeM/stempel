@@ -13,19 +13,19 @@ enum Opt {
         /// Time when started
         time: Option<String>,
         /// Path to storage file
-        #[structopt(short, long, default_value = "./time.json")]
+        #[structopt(short, long, default_value = "./stempel.json")]
         storage: PathBuf,
     },
     Stop {
         /// Time when started
         time: Option<String>,
         /// Path to storage file
-        #[structopt(short, long, default_value = "./time.json")]
+        #[structopt(short, long, default_value = "./stempel.json")]
         storage: PathBuf,
     },
     Stats {
         /// Path to storage file
-        #[structopt(short, long, default_value = "./time.json")]
+        #[structopt(short, long, default_value = "./stempel.json")]
         storage: PathBuf,
     },
 }
