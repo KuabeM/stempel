@@ -1,8 +1,9 @@
 use chrono::{DateTime, Local};
 use failure::{bail, Error};
-use log::{info, warn};
+use log::debug;
 use std::path::Path;
 use std::time::Duration;
+use colored::*;
 
 use crate::storage::*;
 
@@ -12,7 +13,7 @@ pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let date: DateTime<Local> = Local::now();
     store.add_set(WorkSet::new(WorkType::Start, now, date));
 
-    info!("store: {:?}", store);
+    debug!("store: {:?}", store);
     store.write(&storage)?;
     Ok(())
 }
@@ -28,11 +29,12 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let start = store.try_start()?;
     let now: DateTime<Local> = Local::now();
     let duration: Duration = now.signed_duration_since(start).to_std()?;
-    if duration > Duration::new(26 * 60 * 60, 0) {
-        warn!(
-            "{}, you worked more than a day? It's been {}s",
+    if duration > Duration::new(24 * 60 * 60, 0) {
+        println!(
+            "{} {}, you worked more than a day? It's been {}h",
+            " WARN ".yellow(),
             store.name(),
-            duration.as_secs()
+            duration.as_secs() / 3600
         );
     }
 
@@ -40,8 +42,9 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     store.add_set(WorkSet::new(WorkType::Work, duration, start));
     store.write(&storage)?;
     println!(
-        "You worked {}s today. Enjoy your evening :)",
-        duration.as_secs()
+        "{} You worked {}h today. Enjoy your evening :)",
+        " INFO ".green(),
+        duration.as_secs() / 3600
     );
     Ok(())
 }
@@ -49,5 +52,12 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 pub fn stats<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let store = WorkStorage::from_file(storage)?;
     println!("{}", store.stats());
+    Ok(())
+}
+
+pub fn monthly_stats<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
+    let store = WorkStorage::from_file(storage)?;
+    let months = store.months();
+    // TODO filter months
     Ok(())
 }

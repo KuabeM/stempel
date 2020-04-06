@@ -65,7 +65,7 @@ impl fmt::Display for WorkSet {
             self.ty,
             self.start.format("%d/%m/%Y, %H:%M (%a)"),
             dur.num_hours(),
-            dur.num_minutes()
+            dur.num_minutes() - dur.num_hours() * 60
         )
     }
 }
@@ -138,6 +138,17 @@ impl WorkStorage {
 
     pub fn del_start(&mut self) {
         self.work_sets.retain(|w| w.ty != WorkType::Start);
+    }
+
+    pub fn months(&self) -> Vec<String> {
+        let mut months: Vec<String> = self
+            .work_sets
+            .iter()
+            .map(|m| m.start.date().format("%m").to_string())
+            .collect();
+        months.sort();
+        months.dedup();
+        months
     }
 }
 
