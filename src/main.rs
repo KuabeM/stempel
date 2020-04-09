@@ -45,7 +45,7 @@ fn run() -> Result<(), Error> {
         }
         Opt::Stats { storage } => {
             info!("Stats about {:?}", storage);
-            commands::stats(storage)?;
+            commands::stats(&storage)?;
         }
     }
 

@@ -1,9 +1,9 @@
 use chrono::{DateTime, Local};
+use colored::*;
 use failure::{bail, Error};
 use log::debug;
 use std::path::Path;
 use std::time::Duration;
-use colored::*;
 
 use crate::storage::*;
 
@@ -50,14 +50,42 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 }
 
 pub fn stats<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
-    let store = WorkStorage::from_file(storage)?;
-    println!("{}", store.stats());
+    let store = WorkStorage::from_file(&storage)?;
+    if store.work_sets.len() < 6 {
+        println!("{}", store.stats());
+    } else {
+        monthly_stats(&storage)?;
+    }
     Ok(())
 }
 
 pub fn monthly_stats<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let store = WorkStorage::from_file(storage)?;
     let months = store.months();
-    // TODO filter months
+    let weeks = store.weeks();
+    for m in months {
+        let work_per_m = store.filter(|w| {
+            w.start
+                .date()
+                .format("%m")
+                .to_string()
+                .parse::<u8>()
+                .unwrap()
+                == m
+        });
+        println!("{} {: >2}{}", "Month".green(), m.to_string().green(), ":".green());
+        for w in &weeks {
+            let work_per_w: Duration = work_per_m
+                .filter(|s| &s.start.date().format("%W").to_string() == w)
+                .work_sets
+                .iter()
+                .fold(Duration::new(0, 0), |acc, d| acc + d.duration);
+            if work_per_w.as_nanos() > 0 {
+                let h = work_per_w.as_secs() / 3600;
+                let min = work_per_w.as_secs() / 60 - h * 60;
+                println!(" Week {}: {: >4}:{:02}h", w, h, min);
+            }
+        }
+    }
     Ok(())
 }

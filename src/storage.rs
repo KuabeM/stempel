@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub enum WorkType {
     Work,
     Start,
@@ -39,11 +39,11 @@ impl fmt::Display for WorkType {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WorkSet {
-    ty: WorkType,
-    duration: Duration,
-    start: DateTime<Local>,
+    pub ty: WorkType,
+    pub duration: Duration,
+    pub start: DateTime<Local>,
 }
 
 impl WorkSet {
@@ -72,8 +72,8 @@ impl fmt::Display for WorkSet {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WorkStorage {
-    name: String,
-    work_sets: Vec<WorkSet>,
+    pub name: String,
+    pub work_sets: Vec<WorkSet>,
 }
 
 impl WorkStorage {
@@ -140,15 +140,42 @@ impl WorkStorage {
         self.work_sets.retain(|w| w.ty != WorkType::Start);
     }
 
-    pub fn months(&self) -> Vec<String> {
-        let mut months: Vec<String> = self
+    pub fn months(&self) -> Vec<u8> {
+        let mut months: Vec<u8> = self
             .work_sets
             .iter()
-            .map(|m| m.start.date().format("%m").to_string())
+            .filter_map(|m| m.start.date().format("%m").to_string().parse().ok())
             .collect();
         months.sort();
         months.dedup();
         months
+    }
+
+    pub fn weeks(&self) -> Vec<String> {
+        let mut weeks: Vec<String> = self
+            .work_sets
+            .iter()
+            .map(|m| m.start.date().format("%W").to_string())
+            .collect();
+        weeks.sort();
+        weeks.dedup();
+        weeks
+    }
+
+    pub fn filter<P>(&self, predicate: P) -> WorkStorage
+    where
+        P: Fn(&WorkSet) -> bool,
+    {
+        let work_sets: Vec<WorkSet> = self
+            .work_sets
+            .clone()
+            .into_iter()
+            .filter(|w| predicate(w))
+            .collect();
+        WorkStorage {
+            name: self.name.clone(),
+            work_sets: work_sets,
+        }
     }
 }
 
