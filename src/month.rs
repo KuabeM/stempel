@@ -1,5 +1,5 @@
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::fmt;
-use num_enum::{TryFromPrimitive, IntoPrimitive};
 use std::str::FromStr;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
@@ -16,7 +16,7 @@ pub enum Month {
     September,
     October,
     November,
-    December
+    December,
 }
 
 impl fmt::Display for Month {

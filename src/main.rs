@@ -1,13 +1,13 @@
 use common_failures::quick_main;
+use env_logger::Env;
 use failure::Error;
 use log::debug;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use env_logger::Env;
 
 mod commands;
-mod storage;
 mod month;
+mod storage;
 
 use month::Month;
 
@@ -39,22 +39,32 @@ enum Opt {
 }
 
 fn run() -> Result<(), Error> {
-    env_logger::from_env(Env::default().default_filter_or("info")).format_timestamp(None)
+    env_logger::from_env(Env::default().default_filter_or("info"))
+        .format_timestamp(None)
         .format_module_path(false)
         .init();
 
     match Opt::from_args() {
         Opt::Start { time, storage } => {
             debug!("Start at {:?}, store in {:?}", time, storage);
-            commands::start(storage.unwrap_or(PathBuf::from(std::env::var("HOME")? + "/.config/stempel.json")))?;
+            commands::start(storage.unwrap_or(PathBuf::from(
+                std::env::var("HOME")? + "/.config/stempel.json",
+            )))?;
         }
         Opt::Stop { time, storage } => {
             debug!("Stop at {:?}, store in {:?}", time, storage);
-            commands::stop(storage.unwrap_or(PathBuf::from(std::env::var("HOME")? + "/.config/stempel.json")))?;
+            commands::stop(storage.unwrap_or(PathBuf::from(
+                std::env::var("HOME")? + "/.config/stempel.json",
+            )))?;
         }
         Opt::Stats { storage, month } => {
             debug!("Stats of `{:?}`", storage);
-            commands::stats(&storage.unwrap_or(PathBuf::from(std::env::var("HOME")? + "/.config/stempel.json")), month)?;
+            commands::stats(
+                &storage.unwrap_or(PathBuf::from(
+                    std::env::var("HOME")? + "/.config/stempel.json",
+                )),
+                month,
+            )?;
         }
     }
 

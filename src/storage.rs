@@ -1,12 +1,12 @@
 use chrono::{DateTime, Local};
 use failure::{bail, format_err, Error};
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::time::Duration;
-use serde::{Deserialize, Serialize};
 
 use crate::month::Month;
 
