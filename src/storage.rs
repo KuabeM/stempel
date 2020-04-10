@@ -1,5 +1,6 @@
 use chrono::{DateTime, Local};
 use failure::{bail, format_err, Error};
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt;
 use std::fs::File;
@@ -7,9 +8,9 @@ use std::io::BufReader;
 use std::path::Path;
 use std::time::Duration;
 
-use serde::{Deserialize, Serialize};
+use crate::month::Month;
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub enum WorkType {
     Work,
     Start,
@@ -39,11 +40,11 @@ impl fmt::Display for WorkType {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WorkSet {
-    ty: WorkType,
-    duration: Duration,
-    start: DateTime<Local>,
+    pub ty: WorkType,
+    pub duration: Duration,
+    pub start: DateTime<Local>,
 }
 
 impl WorkSet {
@@ -65,15 +66,15 @@ impl fmt::Display for WorkSet {
             self.ty,
             self.start.format("%d/%m/%Y, %H:%M (%a)"),
             dur.num_hours(),
-            dur.num_minutes()
+            dur.num_minutes() - dur.num_hours() * 60
         )
     }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WorkStorage {
-    name: String,
-    work_sets: Vec<WorkSet>,
+    pub name: String,
+    pub work_sets: Vec<WorkSet>,
 }
 
 impl WorkStorage {
@@ -138,6 +139,44 @@ impl WorkStorage {
 
     pub fn del_start(&mut self) {
         self.work_sets.retain(|w| w.ty != WorkType::Start);
+    }
+
+    pub fn months(&self) -> Vec<Month> {
+        let mut months: Vec<Month> = self
+            .work_sets
+            .iter()
+            .map(|m| Month::from(m.start.date().format("%B").to_string()))
+            .collect();
+        months.sort();
+        months.dedup();
+        months
+    }
+
+    pub fn weeks(&self) -> Vec<String> {
+        let mut weeks: Vec<String> = self
+            .work_sets
+            .iter()
+            .map(|m| m.start.date().format("%W").to_string())
+            .collect();
+        weeks.sort();
+        weeks.dedup();
+        weeks
+    }
+
+    pub fn filter<P>(&self, predicate: P) -> WorkStorage
+    where
+        P: Fn(&WorkSet) -> bool,
+    {
+        let work_sets: Vec<WorkSet> = self
+            .work_sets
+            .clone()
+            .into_iter()
+            .filter(|w| predicate(w))
+            .collect();
+        WorkStorage {
+            name: self.name.clone(),
+            work_sets,
+        }
     }
 }
 

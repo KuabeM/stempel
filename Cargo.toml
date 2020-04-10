@@ -1,6 +1,6 @@
 [package]
 name = "stempel"
-version = "0.4.1"
+version = "0.5.0"
 authors = ["Korbinian Maier <korbinian.maier@tum.de>"]
 license = "MIT"
 edition = "2018"
@@ -20,11 +20,13 @@ maintenance = { status = "actively-developed" }
 chrono = { version = "0.4", features = ["serde"] }
 failure = "0.1"
 log = "0.4"
-env_logger = "0.5"
+env_logger = "0.7"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 structopt = "0.3"
 common_failures = "0.1"
+colored = "1.9"
+num_enum = "0.4.3"
 
 [profile.release]
 lto = true
