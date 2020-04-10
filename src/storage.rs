@@ -6,8 +6,9 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::time::Duration;
-
 use serde::{Deserialize, Serialize};
+
+use crate::month::Month;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub enum WorkType {
@@ -140,11 +141,11 @@ impl WorkStorage {
         self.work_sets.retain(|w| w.ty != WorkType::Start);
     }
 
-    pub fn months(&self) -> Vec<u8> {
-        let mut months: Vec<u8> = self
+    pub fn months(&self) -> Vec<Month> {
+        let mut months: Vec<Month> = self
             .work_sets
             .iter()
-            .filter_map(|m| m.start.date().format("%m").to_string().parse().ok())
+            .map(|m| Month::from(m.start.date().format("%B").to_string()))
             .collect();
         months.sort();
         months.dedup();
