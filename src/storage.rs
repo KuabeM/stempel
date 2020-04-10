@@ -175,7 +175,7 @@ impl WorkStorage {
             .collect();
         WorkStorage {
             name: self.name.clone(),
-            work_sets: work_sets,
+            work_sets,
         }
     }
 }

@@ -107,7 +107,7 @@ fn monthly_stats<P: AsRef<Path>>(storage: P, month: Month) -> Result<(), Error> 
     let weeks = store.weeks();
     let work_per_m =
         store.filter(|w| Month::from(w.start.date().format("%B").to_string()) == month);
-    if work_per_m.work_sets.len() == 0 {
+    if work_per_m.work_sets.is_empty() {
         warn!("{}, you did not work in {}!", store.name(), month);
         return Ok(());
     }
