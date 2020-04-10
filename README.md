@@ -16,13 +16,13 @@ where the available subcommands are
   - `stop` checks if a `start` entry is in `file` and calculates the working time, aborts if no `start` entry is found
   - `stats` prints current statistics.
 
-The storage file defaults to `./stempel.json`
+The storage file defaults to `$HOME/.config/stempel.json`
 
 ## Planned Features
 
   - Statistics: 
     * [x] pretty printinng
-    * [ ] provide weekly, monthly,... statistics
+    * [x] provide weekly, monthly,... statistics
   - [ ] Tracking: allow to specify start and stop time as cli arg
   - [ ] Tracking: cancle started work
   - [ ] Storage: don't store as seconds and nanoseconds, use something more verbose?
