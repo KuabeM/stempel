@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Utc, Local};
 use failure::{bail, format_err, Error};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -44,11 +44,11 @@ impl fmt::Display for WorkType {
 pub struct WorkSet {
     pub ty: WorkType,
     pub duration: Duration,
-    pub start: DateTime<Local>,
+    pub start: DateTime<Utc>,
 }
 
 impl WorkSet {
-    pub fn new(ty: WorkType, duration: Duration, start: DateTime<Local>) -> Self {
+    pub fn new(ty: WorkType, duration: Duration, start: DateTime<Utc>) -> Self {
         WorkSet {
             ty,
             duration,
@@ -60,11 +60,12 @@ impl WorkSet {
 impl fmt::Display for WorkSet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let dur = chrono::Duration::from_std(self.duration).map_err(|_| fmt::Error)?;
+        let loc: DateTime<Local> = DateTime::from(self.start);
         write!(
             f,
             "{} on {}: {:>02}:{:>02} h",
             self.ty,
-            self.start.format("%d/%m/%Y, %H:%M (%a)"),
+            loc.format("%d/%m/%Y, %H:%M (%a)"),
             dur.num_hours(),
             dur.num_minutes() - dur.num_hours() * 60
         )
@@ -122,7 +123,7 @@ impl WorkStorage {
         self.to_string()
     }
 
-    pub fn try_start(&self) -> Result<DateTime<Local>, Error> {
+    pub fn try_start(&self) -> Result<DateTime<Utc>, Error> {
         let start = self
             .work_sets
             .iter()
@@ -210,7 +211,12 @@ fn serde_ok() {
             {
                 "ty": "Work",
                 "duration": {"secs": 2, "nanos": 0},
-                "start": "2020-03-27T10:22:12.755844511+00:00"
+                "start": "2020-03-27T10:22:12.755844511Z"
+            },
+            {
+                "ty": "Start",
+                "duration": {"secs": 2, "nanos": 0},
+                "start": "2020-03-27T10:22:12.755844511Z"
             }
         ]
     }"#;
@@ -221,9 +227,10 @@ fn serde_ok() {
         store.work_sets.first().unwrap().duration,
         std::time::Duration::from_secs(2)
     );
+    assert_eq!(store.work_sets.len(), 2);
 
     let store_ser = serde_json::to_string(&store).expect("Failed to serialize");
-    let dt: DateTime<Local> = DateTime::parse_from_rfc3339("2020-03-27T10:22:12.755844511+00:00")
+    let dt: DateTime<Utc> = DateTime::parse_from_rfc3339("2020-03-27T10:22:12.755844511+00:00")
         .unwrap()
         .into();
     store.work_sets[0].start = dt;

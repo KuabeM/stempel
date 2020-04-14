@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Utc};
 use colored::*;
 use failure::{bail, Error};
 use log::{debug, info, warn};
@@ -12,7 +12,7 @@ use crate::storage::*;
 pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let mut store = WorkStorage::from_file(&storage)?;
     let now = Duration::new(0, 0);
-    let date: DateTime<Local> = Local::now();
+    let date: DateTime<Utc> = Utc::now();
     store.add_set(WorkSet::new(WorkType::Start, now, date));
 
     debug!("store: {:?}", store);
@@ -29,7 +29,7 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     }
     let mut store = WorkStorage::from_file(&storage)?;
     let start = store.try_start()?;
-    let now: DateTime<Local> = Local::now();
+    let now: DateTime<Utc> = Utc::now();
     let duration: Duration = now.signed_duration_since(start).to_std()?;
     if duration > Duration::new(24 * 60 * 60, 0) {
         warn!(
