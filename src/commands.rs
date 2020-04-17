@@ -11,9 +11,13 @@ use crate::storage::*;
 
 pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let mut store = WorkStorage::from_file(&storage)?;
-    let now = Duration::new(0, 0);
-    let date: DateTime<Utc> = Utc::now();
-    store.add_set(WorkSet::new(WorkType::Start, now, date));
+    if let Ok(s) = store.try_start() {
+        bail!("You already started on {} at {}h", s.start.date().format("%d/%m/%Y"), s.start.time().format("%H:%M"));
+    } else {
+        let now = Duration::new(0, 0);
+        let date: DateTime<Utc> = Utc::now();
+        store.add_set(WorkSet::new(WorkType::Start, now, date));
+    }
 
     debug!("store: {:?}", store);
     store.write(&storage)?;
@@ -28,9 +32,9 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
         );
     }
     let mut store = WorkStorage::from_file(&storage)?;
-    let start = store.try_start()?;
+    let s = store.try_start()?;
     let now: DateTime<Utc> = Utc::now();
-    let duration: Duration = now.signed_duration_since(start).to_std()?;
+    let duration: Duration = now.signed_duration_since(s.start).to_std()?;
     if duration > Duration::new(24 * 60 * 60, 0) {
         warn!(
             "{}, you worked more than a day? It's been {}:{}h",
@@ -41,7 +45,7 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     }
 
     store.del_start();
-    store.add_set(WorkSet::new(WorkType::Work, duration, start));
+    store.add_set(WorkSet::new(WorkType::Work, duration, s.start));
     store.write(&storage)?;
     info!(
         "You worked {}:{}h today. Enjoy your evening \u{1F389}",
@@ -126,4 +130,48 @@ fn monthly_stats<P: AsRef<Path>>(storage: P, month: Month) -> Result<(), Error> 
         }
     }
     Ok(())
+}
+
+pub fn take_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
+    let mut store = WorkStorage::from_file(&storage)?;
+    if store.try_start().is_err() {
+        bail!("You want to take a break, but you didn't start yet");
+    }
+    match store.try_break() {
+        Ok(b) => {
+            let now: DateTime<Utc> = Utc::now();
+            let duration: Duration = now.signed_duration_since(b.start).to_std()?;
+            if b.duration != Duration::new(0, 0) {
+                debug!("There is already a break, starting another one.");
+                let dur = Duration::new(0, 0);
+                store.add_set(WorkSet::new(WorkType::Break, dur, now));
+
+                debug!("store: {:?}", store);
+                store.write(&storage)?;
+                return Ok(());
+            }
+
+            if duration > Duration::new(24 * 60 * 60, 0) {
+                warn!(
+                    "{}, your break of {}:{}h is quite long. Did you fall asleep?",
+                    store.name(),
+                    duration.as_secs() / 3600,
+                    duration.as_secs() / 60 - duration.as_secs() / 3600
+                );
+            }
+            store.del_break();
+            store.add_set(WorkSet::new(WorkType::Break, duration, now));
+            store.write(&storage)?;
+            Ok(())
+        }
+        Err(_) => {
+            let dur = Duration::new(0, 0);
+            let date: DateTime<Utc> = Utc::now();
+            store.add_set(WorkSet::new(WorkType::Break, dur, date));
+
+            debug!("store: {:?}", store);
+            store.write(&storage)?;
+            Ok(())
+        }
+    }
 }

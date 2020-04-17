@@ -36,6 +36,11 @@ enum Opt {
         #[structopt(short, long)]
         month: Option<Month>,
     },
+    Break {
+        /// Path to storage file
+        #[structopt(short, long)]
+        storage: Option<PathBuf>,
+    }
 }
 
 fn run() -> Result<(), Error> {
@@ -65,6 +70,10 @@ fn run() -> Result<(), Error> {
                 )),
                 month,
             )?;
+        }
+        Opt::Break { storage } => {
+            debug!("Break for `{:?}`", storage);
+            commands::take_break(&storage.unwrap_or(PathBuf::from(std::env::var("HOME")? + "/.config/stempel.json",)))?;
         }
     }
 

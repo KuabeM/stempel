@@ -15,6 +15,7 @@ pub enum WorkType {
     Work,
     Start,
     Stop,
+    Break,
 }
 
 impl TryFrom<&str> for WorkType {
@@ -25,6 +26,7 @@ impl TryFrom<&str> for WorkType {
             "work" => Ok(WorkType::Work),
             "start" => Ok(WorkType::Start),
             "stop" => Ok(WorkType::Stop),
+            "break" => Ok(WorkType::Break),
             _ => bail!("Failed to parse {} into WorkType", input),
         }
     }
@@ -36,6 +38,7 @@ impl fmt::Display for WorkType {
             WorkType::Start => write!(f, "Start"),
             WorkType::Work => write!(f, " Work"),
             WorkType::Stop => write!(f, " Stop"),
+            WorkType::Break => write!(f, "Break"),
         }
     }
 }
@@ -123,12 +126,12 @@ impl WorkStorage {
         self.to_string()
     }
 
-    pub fn try_start(&self) -> Result<DateTime<Utc>, Error> {
+    pub fn try_start(&self) -> Result<WorkSet, Error> {
         let start = self
             .work_sets
             .iter()
             .find(|w| w.ty == WorkType::Start)
-            .map(|w| w.start);
+            .map(|w| w.clone());
         match start {
             Some(s) => Ok(s),
             None => bail!(
@@ -138,8 +141,25 @@ impl WorkStorage {
         }
     }
 
+    pub fn try_break(&self) -> Result<WorkSet, Error> {
+        let breaked = self
+            .work_sets
+            .iter()
+            .rev()
+            .find(|w| w.ty == WorkType::Break)
+            .map(|w| w.clone());
+        match breaked {
+            Some(s) => Ok(s),
+            None => Err(format_err!("You deserve that break")),
+        }
+    }
+
     pub fn del_start(&mut self) {
         self.work_sets.retain(|w| w.ty != WorkType::Start);
+    }
+
+    pub fn del_break(&mut self) {
+        self.work_sets.retain(|w| w.ty != WorkType::Break);
     }
 
     pub fn months(&self) -> Vec<Month> {
@@ -199,6 +219,8 @@ fn worktype_parses() {
     assert_eq!(WorkType::try_from(w).unwrap(), WorkType::Start);
     let w = "stop";
     assert_eq!(WorkType::try_from(w).unwrap(), WorkType::Stop);
+    let w = "break";
+    assert_eq!(WorkType::try_from(w).unwrap(), WorkType::Break);
     let w = "something";
     assert!(WorkType::try_from(w).is_err());
 }
