@@ -14,7 +14,6 @@ use crate::month::Month;
 pub enum WorkType {
     Work,
     Start,
-    Stop,
     Break,
 }
 
@@ -25,7 +24,6 @@ impl TryFrom<&str> for WorkType {
         match input.to_lowercase().as_str() {
             "work" => Ok(WorkType::Work),
             "start" => Ok(WorkType::Start),
-            "stop" => Ok(WorkType::Stop),
             "break" => Ok(WorkType::Break),
             _ => bail!("Failed to parse {} into WorkType", input),
         }
@@ -37,7 +35,6 @@ impl fmt::Display for WorkType {
         match self {
             WorkType::Start => write!(f, "Start"),
             WorkType::Work => write!(f, " Work"),
-            WorkType::Stop => write!(f, " Stop"),
             WorkType::Break => write!(f, "Break"),
         }
     }
@@ -217,8 +214,6 @@ fn worktype_parses() {
     assert_eq!(WorkType::try_from(w).unwrap(), WorkType::Work);
     let w = "start";
     assert_eq!(WorkType::try_from(w).unwrap(), WorkType::Start);
-    let w = "stop";
-    assert_eq!(WorkType::try_from(w).unwrap(), WorkType::Stop);
     let w = "break";
     assert_eq!(WorkType::try_from(w).unwrap(), WorkType::Break);
     let w = "something";
