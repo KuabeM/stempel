@@ -103,6 +103,12 @@ fn all_monthly_stats<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
             }
         }
     }
+    if let Ok(s) = store.try_start() {
+        println!(" {}", s);
+    }
+    if let Ok(b) = store.try_break() {
+        println!(" {}", b);
+    }
     Ok(())
 }
 
@@ -128,6 +134,12 @@ fn monthly_stats<P: AsRef<Path>>(storage: P, month: Month) -> Result<(), Error> 
             let min = work_per_w.as_secs() / 60 - h * 60;
             println!(" Week {}: {: >4}:{:02}h", w, h, min);
         }
+    }
+    if let Ok(s) = store.try_start() {
+        println!(" {}", s);
+    }
+    if let Ok(b) = store.try_break() {
+        println!(" {}", b);
     }
     Ok(())
 }
