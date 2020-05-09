@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc, Local};
+use chrono::{DateTime, Local, Utc};
 use failure::{bail, format_err, Error};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -59,15 +59,24 @@ impl WorkSet {
 
 impl fmt::Display for WorkSet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let dur = chrono::Duration::from_std(self.duration).map_err(|_| fmt::Error)?;
+        let now: DateTime<Utc> = Utc::now();
+        let (dur, msg) = if self.duration.as_secs() == 0 {
+            (now.signed_duration_since(self.start), "since then")
+        } else {
+            (
+                chrono::Duration::from_std(self.duration).map_err(|_| fmt::Error)?,
+                "",
+            )
+        };
         let loc: DateTime<Local> = DateTime::from(self.start);
         write!(
             f,
-            "{} on {}: {:>02}:{:>02} h",
+            "{} on {}: {:>02}:{:>02} h {}",
             self.ty,
             loc.format("%d/%m/%Y, %H:%M (%a)"),
             dur.num_hours(),
-            dur.num_minutes() - dur.num_hours() * 60
+            dur.num_minutes() - dur.num_hours() * 60,
+            msg
         )
     }
 }
@@ -128,7 +137,7 @@ impl WorkStorage {
             .work_sets
             .iter()
             .find(|w| w.ty == WorkType::Start)
-            .map(|w| w.clone());
+            .cloned();
         match start {
             Some(s) => Ok(s),
             None => bail!(
@@ -144,7 +153,7 @@ impl WorkStorage {
             .iter()
             .rev()
             .find(|w| w.ty == WorkType::Break)
-            .map(|w| w.clone());
+            .cloned();
         match breaked {
             Some(s) => Ok(s),
             None => Err(format_err!("You deserve that break")),

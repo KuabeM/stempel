@@ -1,3 +1,5 @@
+use crate::month::Month;
+use crate::storage::*;
 use chrono::{DateTime, Utc};
 use colored::*;
 use failure::{bail, Error};
@@ -6,13 +8,14 @@ use std::convert::TryFrom;
 use std::path::Path;
 use std::time::Duration;
 
-use crate::month::Month;
-use crate::storage::*;
-
 pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let mut store = WorkStorage::from_file(&storage)?;
     if let Ok(s) = store.try_start() {
-        bail!("You already started on {} at {}h", s.start.date().format("%d/%m/%Y"), s.start.time().format("%H:%M"));
+        bail!(
+            "You already started on {} at {}h",
+            s.start.date().format("%d/%m/%Y"),
+            s.start.time().format("%H:%M")
+        );
     } else {
         let now = Duration::new(0, 0);
         let date: DateTime<Utc> = Utc::now();
@@ -43,8 +46,16 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
             duration.as_secs() / 60 - duration.as_secs() / 3600
         );
     }
+    // check if there is a break
+    let break_dur = if let Ok(b) = store.try_break() {
+        b.duration
+    } else {
+        Duration::new(0, 0)
+    };
+    let duration = duration - break_dur;
 
     store.del_start();
+    store.del_break();
     store.add_set(WorkSet::new(WorkType::Work, duration, s.start));
     store.write(&storage)?;
     info!(
