@@ -43,7 +43,7 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
             "{}, you worked more than a day? It's been {}:{}h",
             store.name(),
             duration.as_secs() / 3600,
-            duration.as_secs() / 60 - duration.as_secs() / 3600
+            (duration.as_secs() / 3600) % 60
         );
     }
     // check if there is a break
@@ -61,7 +61,7 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     info!(
         "You worked {}:{}h today. Enjoy your evening \u{1F389}",
         duration.as_secs() / 3600,
-        duration.as_secs() / 60 - duration.as_secs() / 3600
+        (duration.as_secs() / 3600) % 60
     );
     Ok(())
 }
