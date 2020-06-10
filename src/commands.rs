@@ -8,6 +8,10 @@ use std::convert::TryFrom;
 use std::path::Path;
 use std::time::Duration;
 
+/// Handles the start of a working period called by sub command `start`
+///
+/// `storage` points to the json storage file. Returns an error if there already exists a start
+/// entry in the storage.
 pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let mut store = WorkStorage::from_file(&storage)?;
     if let Ok(s) = store.try_start() {
@@ -27,6 +31,9 @@ pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     Ok(())
 }
 
+/// Calculates and writes the work to the storage based on a previous start.
+///
+/// `storage` points to the json storage file. Throws an error if there is no such storage yet.
 pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     if !storage.as_ref().exists() {
         bail!(
@@ -66,6 +73,9 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     Ok(())
 }
 
+/// Prints a summary of the current storage either for one month or all data.
+///
+/// Handler for the `stats` sub command
 pub fn stats<P: AsRef<Path>>(storage: P, month: Option<Month>) -> Result<(), Error> {
     if !storage.as_ref().exists() {
         bail!(
@@ -87,6 +97,7 @@ pub fn stats<P: AsRef<Path>>(storage: P, month: Option<Month>) -> Result<(), Err
     }
 }
 
+/// Prints all entry of all months in `storage`
 fn all_monthly_stats<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let store = WorkStorage::from_file(storage)?;
     let months = store.months();
@@ -123,6 +134,7 @@ fn all_monthly_stats<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     Ok(())
 }
 
+// Prints the entries in the `storage` for one `month`
 fn monthly_stats<P: AsRef<Path>>(storage: P, month: Month) -> Result<(), Error> {
     let store = WorkStorage::from_file(storage)?;
     let weeks = store.weeks();
@@ -155,6 +167,9 @@ fn monthly_stats<P: AsRef<Path>>(storage: P, month: Month) -> Result<(), Error> 
     Ok(())
 }
 
+/// Add a 'break' entry to the storage as handler of `break` sub command
+///
+/// `storage` the json storage file. Throws an error if there is no start entry in the storage.
 pub fn take_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let mut store = WorkStorage::from_file(&storage)?;
     if store.try_start().is_err() {

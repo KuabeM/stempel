@@ -1,3 +1,8 @@
+//! The `storage` module implements the logic for storing the specific work entities.
+//!
+//! It does not contain much business logic of handling inputs/outputs or calculations, it's
+//! intended to wrap the information stored in a file.
+
 use chrono::{DateTime, Local, Utc};
 use failure::{bail, format_err, Error};
 use serde::{Deserialize, Serialize};
@@ -10,10 +15,14 @@ use std::time::Duration;
 
 use crate::month::Month;
 
+/// Different kind of entries in the storage
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub enum WorkType {
+    /// Work set with start and duration
     Work,
+    /// Date-time where one started working
     Start,
+    /// Either date-time of start of break or break with start and duration
     Break,
 }
 
@@ -40,6 +49,7 @@ impl fmt::Display for WorkType {
     }
 }
 
+/// One entity of work, i.e. either a work day, a start of work or break
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WorkSet {
     pub ty: WorkType,
@@ -81,6 +91,7 @@ impl fmt::Display for WorkSet {
     }
 }
 
+/// Mapping of storage file containing whole datasets of different kinds of work
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WorkStorage {
     pub name: String,
