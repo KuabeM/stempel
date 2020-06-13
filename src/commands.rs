@@ -20,14 +20,16 @@ pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
             s.start.date().format("%d/%m/%Y"),
             s.start.time().format("%H:%M")
         );
-    } else {
-        let now = Duration::new(0, 0);
-        let date: DateTime<Utc> = Utc::now();
-        store.add_set(WorkSet::new(WorkType::Start, now, date));
     }
 
+    let now = Duration::new(0, 0);
+    let date: DateTime<Utc> = Utc::now();
+    store.add_set(WorkSet::new(WorkType::Start, now, date));
+
+    info!("Started at {}. Now be productive!", date.time().format("%H:%M"));
     debug!("store: {:?}", store);
     store.write(&storage)?;
+
     Ok(())
 }
 
@@ -134,7 +136,7 @@ fn all_monthly_stats<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     Ok(())
 }
 
-// Prints the entries in the `storage` for one `month`
+/// Prints the entries in the `storage` for one `month`
 fn monthly_stats<P: AsRef<Path>>(storage: P, month: Month) -> Result<(), Error> {
     let store = WorkStorage::from_file(storage)?;
     let weeks = store.weeks();
@@ -172,9 +174,12 @@ fn monthly_stats<P: AsRef<Path>>(storage: P, month: Month) -> Result<(), Error> 
 /// `storage` the json storage file. Throws an error if there is no start entry in the storage.
 pub fn take_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let mut store = WorkStorage::from_file(&storage)?;
-    if store.try_start().is_err() {
+    let start = if let Ok(s) = store.try_start() {
+        s
+    } else {
         bail!("You want to take a break, but you didn't start yet");
-    }
+    };
+
     match store.try_break() {
         Ok(b) => {
             let now: DateTime<Utc> = Utc::now();
@@ -184,7 +189,6 @@ pub fn take_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
                 let dur = Duration::new(0, 0);
                 store.add_set(WorkSet::new(WorkType::Break, dur, now));
 
-                debug!("store: {:?}", store);
                 store.write(&storage)?;
                 return Ok(());
             }
@@ -206,8 +210,8 @@ pub fn take_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
             let dur = Duration::new(0, 0);
             let date: DateTime<Utc> = Utc::now();
             store.add_set(WorkSet::new(WorkType::Break, dur, date));
+            info!("Started a break after {}h of work.", start.start.time().format("%H:%M"));
 
-            debug!("store: {:?}", store);
             store.write(&storage)?;
             Ok(())
         }
