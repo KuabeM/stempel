@@ -1,6 +1,6 @@
 [package]
 name = "stempel"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["Korbinian Maier <korbinian.maier@tum.de>"]
 license = "MIT"
 edition = "2018"
