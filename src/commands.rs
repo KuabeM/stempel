@@ -26,7 +26,10 @@ pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let date: DateTime<Utc> = Utc::now();
     store.add_set(WorkSet::new(WorkType::Start, now, date));
 
-    info!("Started at {}. Now be productive!", date.time().format("%H:%M"));
+    info!(
+        "Started at {}. Now be productive!",
+        date.time().format("%H:%M")
+    );
     debug!("store: {:?}", store);
     store.write(&storage)?;
 
@@ -210,7 +213,10 @@ pub fn take_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
             let dur = Duration::new(0, 0);
             let date: DateTime<Utc> = Utc::now();
             store.add_set(WorkSet::new(WorkType::Break, dur, date));
-            info!("Started a break after {}h of work.", start.start.time().format("%H:%M"));
+            info!(
+                "Started a break after {}h of work.",
+                start.start.time().format("%H:%M")
+            );
 
             store.write(&storage)?;
             Ok(())
