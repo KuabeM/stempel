@@ -8,6 +8,10 @@ use std::convert::TryFrom;
 use std::path::Path;
 use std::time::Duration;
 
+fn time_from_duration(dur: Duration) -> (u64, u64) {
+    (dur.as_secs() / 3600, (dur.as_secs() / 60) % 60)
+}
+
 /// Handles the start of a working period called by sub command `start`
 ///
 /// `storage` points to the json storage file. Returns an error if there already exists a start
@@ -50,12 +54,12 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let s = store.try_start()?;
     let now: DateTime<Utc> = Utc::now();
     let duration: Duration = now.signed_duration_since(s.start).to_std()?;
+    let (h, m) = time_from_duration(duration);
     if duration > Duration::new(24 * 60 * 60, 0) {
         warn!(
             "{}, you worked more than a day? It's been {}:{}h",
             store.name(),
-            duration.as_secs() / 3600,
-            (duration.as_secs() / 3600) % 60
+            h, m
         );
     }
     // check if there is a break
@@ -72,8 +76,7 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     store.write(&storage)?;
     info!(
         "You worked {}:{}h today. Enjoy your evening \u{1F389}",
-        duration.as_secs() / 3600,
-        (duration.as_secs() / 3600) % 60
+        h, m
     );
     Ok(())
 }
@@ -124,8 +127,7 @@ fn all_monthly_stats<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
                 .iter()
                 .fold(Duration::new(0, 0), |acc, d| acc + d.duration);
             if work_per_w.as_nanos() > 0 {
-                let h = work_per_w.as_secs() / 3600;
-                let min = work_per_w.as_secs() / 60 - h * 60;
+                let (h, min) = time_from_duration(work_per_w);
                 println!(" Week {}: {: >4}:{:02}h", w, h, min);
             }
         }
@@ -158,8 +160,7 @@ fn monthly_stats<P: AsRef<Path>>(storage: P, month: Month) -> Result<(), Error> 
             .iter()
             .fold(Duration::new(0, 0), |acc, d| acc + d.duration);
         if work_per_w.as_nanos() > 0 {
-            let h = work_per_w.as_secs() / 3600;
-            let min = work_per_w.as_secs() / 60 - h * 60;
+            let (h, min) = time_from_duration(work_per_w);
             println!(" Week {}: {: >4}:{:02}h", w, h, min);
         }
     }
@@ -196,12 +197,12 @@ pub fn take_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
                 return Ok(());
             }
 
-            if duration > Duration::new(24 * 60 * 60, 0) {
+            if duration > Duration::new(8 * 60 * 60, 0) {
+                let (h, m) = time_from_duration(duration);
                 warn!(
                     "{}, your break of {}:{}h is quite long. Did you fall asleep?",
                     store.name(),
-                    duration.as_secs() / 3600,
-                    duration.as_secs() / 60 - duration.as_secs() / 3600
+                    h, m
                 );
             }
             store.del_break();
@@ -221,5 +222,20 @@ pub fn take_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
             store.write(&storage)?;
             Ok(())
         }
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn calc_time_from_dur() {
+        let dur = Duration::from_secs(12*60*60);
+        assert_eq!(time_from_duration(dur), (12, 0));
+        assert_eq!(time_from_duration(dur.checked_add(Duration::from_secs(35*60)).unwrap()), (12, 35));
+        assert_eq!(time_from_duration(dur.checked_add(Duration::from_secs(5*60)).unwrap()), (12, 5));
+        assert_eq!(time_from_duration(dur.checked_add(Duration::from_secs(30*60 + 10 * 60 * 60)).unwrap()), (22, 30));
+        assert_eq!(time_from_duration(dur.checked_add(Duration::from_secs(55*60)).unwrap()), (12, 55));
     }
 }
