@@ -57,9 +57,10 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let (h, m) = time_from_duration(duration);
     if duration > Duration::new(24 * 60 * 60, 0) {
         warn!(
-            "{}, you worked more than a day? It's been {}:{}h",
+            "{}, you worked more than a day? It's been {}:{:02}h",
             store.name(),
-            h, m
+            h,
+            m
         );
     }
     // check if there is a break
@@ -75,7 +76,7 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     store.add_set(WorkSet::new(WorkType::Work, duration, s.start));
     store.write(&storage)?;
     info!(
-        "You worked {}:{}h today. Enjoy your evening \u{1F389}",
+        "You worked {}:{:02}h today. Enjoy your evening \u{1F389}",
         h, m
     );
     Ok(())
@@ -197,27 +198,28 @@ pub fn take_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
                 return Ok(());
             }
 
+            let (h, m) = time_from_duration(duration);
             if duration > Duration::new(8 * 60 * 60, 0) {
-                let (h, m) = time_from_duration(duration);
                 warn!(
                     "{}, your break of {}:{}h is quite long. Did you fall asleep?",
                     store.name(),
-                    h, m
+                    h,
+                    m
                 );
             }
             store.del_break();
             store.add_set(WorkSet::new(WorkType::Break, duration, now));
             store.write(&storage)?;
+            info!("You had a break for {}:{:02}h.", h, m);
             Ok(())
         }
         Err(_) => {
             let dur = Duration::new(0, 0);
             let date: DateTime<Utc> = Utc::now();
             store.add_set(WorkSet::new(WorkType::Break, dur, date));
-            info!(
-                "Started a break after {}h of work.",
-                start.start.time().format("%H:%M")
-            );
+            let dur = date.signed_duration_since(start.start);
+            let (h, m) = time_from_duration(dur.to_std()?);
+            info!("Started a break after {}:{:02}h of work.", h, m);
 
             store.write(&storage)?;
             Ok(())
@@ -225,17 +227,31 @@ pub fn take_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
     #[test]
     fn calc_time_from_dur() {
-        let dur = Duration::from_secs(12*60*60);
+        let dur = Duration::from_secs(12 * 60 * 60);
         assert_eq!(time_from_duration(dur), (12, 0));
-        assert_eq!(time_from_duration(dur.checked_add(Duration::from_secs(35*60)).unwrap()), (12, 35));
-        assert_eq!(time_from_duration(dur.checked_add(Duration::from_secs(5*60)).unwrap()), (12, 5));
-        assert_eq!(time_from_duration(dur.checked_add(Duration::from_secs(30*60 + 10 * 60 * 60)).unwrap()), (22, 30));
-        assert_eq!(time_from_duration(dur.checked_add(Duration::from_secs(55*60)).unwrap()), (12, 55));
+        assert_eq!(
+            time_from_duration(dur.checked_add(Duration::from_secs(35 * 60)).unwrap()),
+            (12, 35)
+        );
+        assert_eq!(
+            time_from_duration(dur.checked_add(Duration::from_secs(5 * 60)).unwrap()),
+            (12, 5)
+        );
+        assert_eq!(
+            time_from_duration(
+                dur.checked_add(Duration::from_secs(30 * 60 + 10 * 60 * 60))
+                    .unwrap()
+            ),
+            (22, 30)
+        );
+        assert_eq!(
+            time_from_duration(dur.checked_add(Duration::from_secs(55 * 60)).unwrap()),
+            (12, 55)
+        );
     }
 }
