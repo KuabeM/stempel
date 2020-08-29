@@ -4,7 +4,6 @@ use chrono::{DateTime, Local, Utc};
 use colored::*;
 use failure::{bail, Error};
 use log::{debug, info, warn};
-use std::convert::TryFrom;
 use std::path::Path;
 use std::time::Duration;
 
@@ -118,7 +117,7 @@ fn all_monthly_stats<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
         println!(
             "{} {: >2}{}",
             "Month".green(),
-            Month::try_from(m)?.to_string().green(),
+            m.to_string().green(),
             ":".green()
         );
         for w in &weeks {
