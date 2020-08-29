@@ -71,22 +71,26 @@ impl fmt::Display for WorkSet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let now: DateTime<Utc> = Utc::now();
         let (dur, msg) = if self.duration.as_secs() == 0 {
-            (now.signed_duration_since(self.start), "since then")
+            (
+                now.signed_duration_since(self.start),
+                ("you worked", "since then"),
+            )
         } else {
             (
                 chrono::Duration::from_std(self.duration).map_err(|_| fmt::Error)?,
-                "",
+                ("", ""),
             )
         };
         let loc: DateTime<Local> = DateTime::from(self.start);
         write!(
             f,
-            "{} on {}: {:>02}:{:>02} h {}",
+            "{} on {}: {} {:>02}:{:>02} h {}",
             self.ty,
             loc.format("%d/%m/%Y, %H:%M (%a)"),
+            msg.0,
             dur.num_hours(),
             dur.num_minutes() - dur.num_hours() * 60,
-            msg
+            msg.1
         )
     }
 }

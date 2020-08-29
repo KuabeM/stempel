@@ -1,6 +1,6 @@
 use crate::month::Month;
 use crate::storage::*;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, Utc};
 use colored::*;
 use failure::{bail, Error};
 use log::{debug, info, warn};
@@ -12,7 +12,7 @@ fn time_from_duration(dur: Duration) -> (u64, u64) {
     (dur.as_secs() / 3600, (dur.as_secs() / 60) % 60)
 }
 
-/// Handles the start of a working period called by sub command `start`
+/// Handles the start of a working period and breaks called by subcommand `start`
 ///
 /// `storage` points to the json storage file. Returns an error if there already exists a start
 /// entry in the storage.
@@ -32,7 +32,7 @@ pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 
     info!(
         "Started at {}. Now be productive!",
-        date.time().format("%H:%M")
+        date.with_timezone(&Local).time().format("%H:%M")
     );
     debug!("store: {:?}", store);
     store.write(&storage)?;
@@ -174,28 +174,21 @@ fn monthly_stats<P: AsRef<Path>>(storage: P, month: Month) -> Result<(), Error> 
     Ok(())
 }
 
-/// Add a 'break' entry to the storage as handler of `break` sub command
+/// Stop a 'break' by adding a `break` entry to the storage as handler of `break` subcommand of `stop`
 ///
-/// `storage` the json storage file. Throws an error if there is no start entry in the storage.
-pub fn take_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
+/// `storage` is the json storage file. Throws an error if there is no start entry in the storage.
+pub fn stop_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let mut store = WorkStorage::from_file(&storage)?;
-    let start = if let Ok(s) = store.try_start() {
-        s
-    } else {
+    if store.try_start().is_err() {
         bail!("You want to take a break, but you didn't start yet");
-    };
+    }
 
     match store.try_break() {
-        Ok(b) => {
+        Ok(b) if b.ty == WorkType::Break => {
             let now: DateTime<Utc> = Utc::now();
             let duration: Duration = now.signed_duration_since(b.start).to_std()?;
             if b.duration != Duration::new(0, 0) {
-                debug!("There is already a break, starting another one.");
-                let dur = Duration::new(0, 0);
-                store.add_set(WorkSet::new(WorkType::Break, dur, now));
-
-                store.write(&storage)?;
-                return Ok(());
+                bail!("There is already a break, do you want to start another one?");
             }
 
             let (h, m) = time_from_duration(duration);
@@ -214,6 +207,32 @@ pub fn take_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
             Ok(())
         }
         Err(_) => {
+            bail!("You tried to end a break, but you never started one.");
+        }
+        Ok(_) => {
+            unreachable!("try_break returned a none break which is impossbile");
+        }
+    }
+}
+
+/// Start a 'break' by adding a `break` entry to the storage as handler of `break` subcommand of `start`
+///
+/// `storage` is the json storage file. Throws an error if there is no start entry in the storage.
+pub fn start_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
+    let mut store = WorkStorage::from_file(&storage)?;
+    let start = if let Ok(s) = store.try_start() {
+        s
+    } else {
+        bail!("You want to take a break, but you didn't start yet");
+    };
+
+    match store.try_break() {
+        Ok(b) if b.ty == WorkType::Break => {
+            if b.duration == Duration::new(0, 0) {
+                bail!("You already started a break.");
+            }
+
+            debug!("There is a break, starting a new one.");
             let dur = Duration::new(0, 0);
             let date: DateTime<Utc> = Utc::now();
             store.add_set(WorkSet::new(WorkType::Break, dur, date));
@@ -223,6 +242,20 @@ pub fn take_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 
             store.write(&storage)?;
             Ok(())
+        }
+        Err(_) => {
+            let dur = Duration::new(0, 0);
+            let date: DateTime<Utc> = Utc::now();
+            store.add_set(WorkSet::new(WorkType::Break, dur, date));
+            let dur = date.signed_duration_since(start.start);
+            let (h, m) = time_from_duration(dur.to_std()?);
+            info!("Started a break after {}:{:02}h of work.", h, m);
+
+            store.write(&storage)?;
+            Ok(())
+        }
+        Ok(_) => {
+            unreachable!("try_break returned a none break which is impossbile");
         }
     }
 }

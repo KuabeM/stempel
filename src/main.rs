@@ -12,22 +12,13 @@ mod storage;
 use month::Month;
 
 #[derive(StructOpt, Debug)]
-#[structopt(about = "track the time spent with your fun colleagues")]
+#[structopt(about = "Track the time spent with your fun colleagues")]
 enum Opt {
-    Start {
-        /// Time when started
-        time: Option<String>,
-        /// Path to storage file
-        #[structopt(short, long)]
-        storage: Option<PathBuf>,
-    },
-    Stop {
-        /// Time when started
-        time: Option<String>,
-        /// Path to storage file
-        #[structopt(short, long)]
-        storage: Option<PathBuf>,
-    },
+    /// Start a working period or a break
+    Start(Action),
+    /// Stop a working period or a break
+    Stop(Action),
+    /// Print statistics about tracked time
     Stats {
         /// Path to storage file
         #[structopt(short, long)]
@@ -36,11 +27,26 @@ enum Opt {
         #[structopt(short, long)]
         month: Option<Month>,
     },
-    Break {
-        /// Path to storage file
-        #[structopt(short, long)]
-        storage: Option<PathBuf>,
-    },
+}
+
+#[derive(StructOpt, Debug)]
+struct Action {
+    /// Path to storage file
+    #[structopt(short, long)]
+    storage: Option<PathBuf>,
+    /// Time when started
+    #[structopt(short, long)]
+    time: Option<String>,
+    /// Start/Stop break
+    #[structopt(subcommand)]
+    breaking: Option<Break>,
+}
+
+#[derive(StructOpt, Debug, PartialEq)]
+enum Break {
+    /// Manage a break
+    #[structopt(name = "break")]
+    Breaking,
 }
 
 fn run() -> Result<(), Error> {
@@ -49,33 +55,28 @@ fn run() -> Result<(), Error> {
         .format_module_path(false)
         .init();
 
+    let default_path = PathBuf::from(std::env::var("HOME")? + "/.config/stempel.json");
+
     match Opt::from_args() {
-        Opt::Start { time, storage } => {
-            debug!("Start at {:?}, store in {:?}", time, storage);
-            commands::start(storage.unwrap_or(PathBuf::from(
-                std::env::var("HOME")? + "/.config/stempel.json",
-            )))?;
+        Opt::Start(action) if action.breaking.is_some() => {
+            debug!("Start break {:?}, store {:?}", action.time, action.storage);
+            commands::start_break(action.storage.unwrap_or(default_path))?;
         }
-        Opt::Stop { time, storage } => {
-            debug!("Stop at {:?}, store in {:?}", time, storage);
-            commands::stop(storage.unwrap_or(PathBuf::from(
-                std::env::var("HOME")? + "/.config/stempel.json",
-            )))?;
+        Opt::Stop(action) if action.breaking.is_some() => {
+            debug!("Stop break {:?}, store {:?}", action.time, action.storage);
+            commands::stop_break(action.storage.unwrap_or(default_path))?;
+        }
+        Opt::Start(action) => {
+            debug!("Start at {:?}, store in {:?}", action.time, action.storage);
+            commands::start(action.storage.unwrap_or(default_path))?;
+        }
+        Opt::Stop(action) => {
+            debug!("Stop at {:?}, store in {:?}", action.time, action.storage);
+            commands::stop(action.storage.unwrap_or(default_path))?;
         }
         Opt::Stats { storage, month } => {
             debug!("Stats of `{:?}`", storage);
-            commands::stats(
-                &storage.unwrap_or(PathBuf::from(
-                    std::env::var("HOME")? + "/.config/stempel.json",
-                )),
-                month,
-            )?;
-        }
-        Opt::Break { storage } => {
-            debug!("Break for `{:?}`", storage);
-            commands::take_break(&storage.unwrap_or(PathBuf::from(
-                std::env::var("HOME")? + "/.config/stempel.json",
-            )))?;
+            commands::stats(&storage.unwrap_or(default_path), month)?;
         }
     }
 
