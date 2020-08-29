@@ -13,20 +13,20 @@ Small utility to store and calculate the time spent at work.
 
 where the available subcommands are
 
-  - `start` writes current time to the file specified in `-s`
-  - `stop` checks if a `start` entry is in `file` and calculates the working time, aborts if no `start` entry is found
-  - `break` starts a break if `file` contains a start, a second `break` ends the pause
+  - `start` writes current time to the file specified in `-s`, use sub-subcommand to start a break
+  - `stop` checks if a `start` entry is in `file` and calculates the working time, aborts if no `start` entry is found, use sub-subcommand to stop a break
   - `stats` prints current statistics.
 
 The storage file defaults to `$HOME/.config/stempel.json`
 
 ## Planned Features
 
-  - Statistics: 
+  - Statistics:
     * [x] pretty printinng
     * [x] provide weekly, monthly,... statistics
+    * [ ] allow printing only ranges of stats, e.g. months, years...
   - [ ] Tracking: allow to specify start and stop time as cli arg
-  - [ ] Tracking: cancle started work
+  - [ ] Tracking: cancel started work
   - [ ] Storage: don't store as seconds and nanoseconds, use something more verbose?
 
 ## License
