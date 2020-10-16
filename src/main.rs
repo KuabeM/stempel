@@ -84,7 +84,7 @@ fn run() -> Result<(), Error> {
 
 fn main() {
     if let Err(e) = run() {
-            log::error!("{}", e.to_string());
-            std::process::exit(1);
+        log::error!("{}", e.to_string());
+        std::process::exit(1);
     }
 }

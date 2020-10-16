@@ -1,4 +1,6 @@
+use chrono::{Datelike, Local};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 
@@ -6,7 +8,7 @@ use std::str::FromStr;
 #[repr(u8)]
 pub enum Month {
     January = 1,
-    Feburary,
+    February,
     March,
     April,
     May,
@@ -37,7 +39,7 @@ impl FromStr for Month {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "january" => Ok(Month::January),
-            "february" => Ok(Month::Feburary),
+            "february" => Ok(Month::February),
             "march" => Ok(Month::March),
             "april" => Ok(Month::April),
             "may" => Ok(Month::May),
@@ -48,6 +50,11 @@ impl FromStr for Month {
             "october" => Ok(Month::October),
             "november" => Ok(Month::November),
             "december" => Ok(Month::December),
+            "current" | "now" => {
+                let now = Local::now();
+                let month = now.month();
+                Month::try_from(month as u8).map_err(|e| e.to_string())
+            }
             &_ => Err(format!("Failed to parse {} into month", s)),
         }
     }
