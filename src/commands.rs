@@ -123,6 +123,7 @@ fn all_monthly_stats<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
         for w in &weeks {
             let work_per_w: Duration = work_per_m
                 .filter(|s| &s.start.date().format("%W").to_string() == w)
+                .filter(|s| s.ty == WorkType::Work)
                 .work_sets
                 .iter()
                 .fold(Duration::new(0, 0), |acc, d| acc + d.duration);
