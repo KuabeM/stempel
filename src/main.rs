@@ -1,4 +1,3 @@
-use common_failures::quick_main;
 use env_logger::Env;
 use failure::Error;
 use log::debug;
@@ -83,4 +82,9 @@ fn run() -> Result<(), Error> {
     Ok(())
 }
 
-quick_main!(run);
+fn main() {
+    if let Err(e) = run() {
+            log::error!("{}", e.to_string());
+            std::process::exit(1);
+    }
+}
