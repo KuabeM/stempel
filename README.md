@@ -26,7 +26,7 @@ The storage file defaults to `$HOME/.config/stempel.json`
     * [x] provide weekly, monthly,... statistics
     * [ ] allow printing only ranges of stats, e.g. months, years...
   - [ ] Tracking: allow to specify start and stop time as cli arg
-  - [ ] Tracking: cancel started work
+  - [x] Tracking: cancel started work
   - [ ] Storage: don't store as seconds and nanoseconds, use something more verbose?
 
 ## License
