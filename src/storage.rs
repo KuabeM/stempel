@@ -16,7 +16,7 @@ use std::time::Duration;
 use crate::month::Month;
 
 /// Different kind of entries in the storage
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkType {
     /// Work set with start and duration
     Work,
@@ -175,12 +175,8 @@ impl WorkStorage {
         }
     }
 
-    pub fn del_start(&mut self) {
-        self.work_sets.retain(|w| w.ty != WorkType::Start);
-    }
-
-    pub fn del_break(&mut self) {
-        self.work_sets.retain(|w| w.ty != WorkType::Break);
+    pub fn delete_type(&mut self, ty: WorkType) {
+        self.work_sets.retain(|w| w.ty != ty);
     }
 
     pub fn months(&self) -> Vec<Month> {
@@ -219,6 +215,14 @@ impl WorkStorage {
             name: self.name.clone(),
             work_sets,
         }
+    }
+
+    pub fn contains(&self, ty: WorkType) -> bool {
+        !self.filter(|w| w.ty == ty).is_empty()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.work_sets.is_empty()
     }
 }
 

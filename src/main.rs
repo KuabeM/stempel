@@ -17,6 +17,8 @@ enum Opt {
     Start(Action),
     /// Stop a working period or a break
     Stop(Action),
+    /// Cancel the last action (Stop can't be undone)
+    Cancel(Action),
     /// Print statistics about tracked time
     Stats {
         /// Path to storage file
@@ -28,6 +30,7 @@ enum Opt {
     },
 }
 
+/// Options for structop subcommands
 #[derive(StructOpt, Debug)]
 struct Action {
     /// Path to storage file
@@ -72,6 +75,11 @@ fn run() -> Result<(), Error> {
         Opt::Stop(action) => {
             debug!("Stop at {:?}, store in {:?}", action.time, action.storage);
             commands::stop(action.storage.unwrap_or(default_path))?;
+        }
+        Opt::Cancel(action) => {
+            debug!("Cancel");
+            let breaking = action.breaking.is_some();
+            commands::cancel(action.storage.unwrap_or(default_path), breaking)?;
         }
         Opt::Stats { storage, month } => {
             debug!("Stats of `{:?}`", storage);

@@ -1,8 +1,12 @@
+//! Provides handlers for command line switches
+//!
+//! Takes care of most of the actual application logic, throws errors and writes to the disk
+
 use crate::month::Month;
 use crate::storage::*;
 use chrono::{DateTime, Local, Utc};
 use colored::*;
-use failure::{bail, Error};
+use failure::{bail, format_err, Error};
 use log::{debug, info, warn};
 use std::path::Path;
 use std::time::Duration;
@@ -70,8 +74,8 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     };
     let duration = duration - break_dur;
 
-    store.del_start();
-    store.del_break();
+    store.delete_type(WorkType::Start);
+    store.delete_type(WorkType::Break);
     store.add_set(WorkSet::new(WorkType::Work, duration, s.start));
     store.write(&storage)?;
     info!(
@@ -79,6 +83,28 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
         h, m
     );
     Ok(())
+}
+
+/// Remove a previously started Break or Start entry from the storage
+///
+/// Returns an Error if the specified type is not in the storage.
+pub fn cancel<P: AsRef<Path>>(storage: P, breaking: bool) -> Result<(), Error> {
+    let mut store = WorkStorage::from_file(&storage)?;
+    let ty = if breaking {
+        WorkType::Break
+    } else {
+        WorkType::Start
+    };
+    if store.contains(ty) {
+        store.delete_type(ty);
+        store.write(storage)?;
+        Ok(())
+    } else {
+        Err(format_err!(
+            "You can't cancel a {} which isn't there...",
+            ty
+        ))
+    }
 }
 
 /// Prints a summary of the current storage either for one month or all data.
@@ -200,7 +226,7 @@ pub fn stop_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
                     m
                 );
             }
-            store.del_break();
+            store.delete_type(WorkType::Break);
             store.add_set(WorkSet::new(WorkType::Break, duration, now));
             store.write(&storage)?;
             info!("You had a break for {}:{:02}h.", h, m);

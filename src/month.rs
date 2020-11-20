@@ -1,3 +1,5 @@
+//! Provides convenience functions to work with Months
+
 use chrono::{Datelike, Local};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::convert::TryFrom;
