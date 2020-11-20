@@ -1,7 +1,8 @@
-//! The `storage` module implements the logic for storing the specific work entities.
+//! The `storage` module implements the logic for storing the specific work
+//! entities.
 //!
-//! It does not contain much business logic of handling inputs/outputs or calculations, it's
-//! intended to wrap the information stored in a file.
+//! It does not contain much business logic of handling inputs/outputs or
+//! calculations, it's intended to wrap the information stored in a file.
 
 use chrono::{DateTime, Local, Utc};
 use failure::{bail, format_err, Error};
