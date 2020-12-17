@@ -21,7 +21,7 @@ fn time_from_duration(dur: Duration) -> (u64, u64) {
 ///
 /// `storage` points to the json storage file. Returns an error if there already
 /// exists a start entry in the storage.
-pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
+pub fn start<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
     let mut store = WorkStorage::from_file(&storage)?;
     if let Ok(s) = store.try_start() {
         bail!(
@@ -32,12 +32,11 @@ pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     }
 
     let now = Duration::new(0, 0);
-    let date: DateTime<Utc> = Utc::now();
-    store.add_set(WorkSet::new(WorkType::Start, now, date));
+    store.add_set(WorkSet::new(WorkType::Start, now, time));
 
     info!(
         "Started at {}. Now be productive!",
-        date.with_timezone(&Local).time().format("%H:%M")
+        time.with_timezone(&Local).time().format("%H:%M")
     );
     debug!("store: {:?}", store);
     store.write(&storage)?;
@@ -49,7 +48,7 @@ pub fn start<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 ///
 /// `storage` points to the json storage file. Throws an error if there is no
 /// such storage yet.
-pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
+pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
     if !storage.as_ref().exists() {
         bail!(
             "There is no time storage {:?}, start working first. It creates the file if necessary",
@@ -58,8 +57,7 @@ pub fn stop<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     }
     let mut store = WorkStorage::from_file(&storage)?;
     let s = store.try_start()?;
-    let now: DateTime<Utc> = Utc::now();
-    let duration: Duration = now.signed_duration_since(s.start).to_std()?;
+    let duration: Duration = time.signed_duration_since(s.start).to_std()?;
     let (h, m) = time_from_duration(duration);
     if duration > Duration::new(24 * 60 * 60, 0) {
         warn!(
@@ -208,7 +206,7 @@ fn monthly_stats<P: AsRef<Path>>(storage: P, month: Month) -> Result<(), Error> 
 ///
 /// `storage` is the json storage file. Throws an error if there is no start
 /// entry in the storage.
-pub fn stop_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
+pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
     let mut store = WorkStorage::from_file(&storage)?;
     if store.try_start().is_err() {
         bail!("You want to take a break, but you didn't start yet");
@@ -216,8 +214,7 @@ pub fn stop_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 
     match store.try_break() {
         Ok(b) if b.ty == WorkType::Break => {
-            let now: DateTime<Utc> = Utc::now();
-            let duration: Duration = now.signed_duration_since(b.start).to_std()?;
+            let duration: Duration = time.signed_duration_since(b.start).to_std()?;
             if b.duration != Duration::new(0, 0) {
                 bail!("There is already a break, do you want to start another one?");
             }
@@ -232,7 +229,7 @@ pub fn stop_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
                 );
             }
             store.delete_type(WorkType::Break);
-            store.add_set(WorkSet::new(WorkType::Break, duration, now));
+            store.add_set(WorkSet::new(WorkType::Break, duration, time));
             store.write(&storage)?;
             info!("You had a break for {}:{:02}h.", h, m);
             Ok(())
@@ -251,7 +248,7 @@ pub fn stop_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 ///
 /// `storage` is the json storage file. Throws an error if there is no start
 /// entry in the storage.
-pub fn start_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
+pub fn start_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
     let mut store = WorkStorage::from_file(&storage)?;
     let start = if let Ok(s) = store.try_start() {
         s
@@ -267,9 +264,8 @@ pub fn start_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 
             debug!("There is a break, starting a new one.");
             let dur = Duration::new(0, 0);
-            let date: DateTime<Utc> = Utc::now();
-            store.add_set(WorkSet::new(WorkType::Break, dur, date));
-            let dur = date.signed_duration_since(start.start);
+            store.add_set(WorkSet::new(WorkType::Break, dur, time));
+            let dur = time.signed_duration_since(start.start);
             let (h, m) = time_from_duration(dur.to_std()?);
             info!("Started a break after {}:{:02}h of work.", h, m);
 
@@ -278,9 +274,8 @@ pub fn start_break<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
         }
         Err(_) => {
             let dur = Duration::new(0, 0);
-            let date: DateTime<Utc> = Utc::now();
-            store.add_set(WorkSet::new(WorkType::Break, dur, date));
-            let dur = date.signed_duration_since(start.start);
+            store.add_set(WorkSet::new(WorkType::Break, dur, time));
+            let dur = time.signed_duration_since(start.start);
             let (h, m) = time_from_duration(dur.to_std()?);
             info!("Started a break after {}:{:02}h of work.", h, m);
 

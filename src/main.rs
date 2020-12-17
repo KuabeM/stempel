@@ -5,9 +5,11 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 mod commands;
+mod delta;
 mod month;
 mod storage;
 
+use delta::{parse_time, OffsetTime};
 use month::Month;
 
 #[derive(StructOpt, Debug)]
@@ -33,15 +35,15 @@ enum Opt {
 /// Options for structop subcommands
 #[derive(StructOpt, Debug)]
 struct Action {
-    /// Path to storage file
-    #[structopt(short, long)]
-    storage: Option<PathBuf>,
-    /// Time when started
-    #[structopt(short, long)]
-    time: Option<String>,
     /// Start/Stop break
     #[structopt(subcommand)]
     breaking: Option<Break>,
+    /// Time when started
+    #[structopt(short, long, parse(try_from_str = parse_time))]
+    offset: Option<OffsetTime>,
+    /// Path to storage file
+    #[structopt(short, long)]
+    storage: Option<PathBuf>,
 }
 
 #[derive(StructOpt, Debug, PartialEq)]
@@ -61,20 +63,24 @@ fn run() -> Result<(), Error> {
 
     match Opt::from_args() {
         Opt::Start(action) if action.breaking.is_some() => {
-            debug!("Start break {:?}, store {:?}", action.time, action.storage);
-            commands::start_break(action.storage.unwrap_or(default_path))?;
+            let time = action.offset.unwrap_or_default().date_time;
+            debug!("Start break {}, store {:?}", &time, action.storage);
+            commands::start_break(action.storage.unwrap_or(default_path), time)?;
         }
         Opt::Stop(action) if action.breaking.is_some() => {
-            debug!("Stop break {:?}, store {:?}", action.time, action.storage);
-            commands::stop_break(action.storage.unwrap_or(default_path))?;
+            let time = action.offset.unwrap_or_default().date_time;
+            debug!("Stop break {}, store {:?}", time, action.storage);
+            commands::stop_break(action.storage.unwrap_or(default_path), time)?;
         }
         Opt::Start(action) => {
-            debug!("Start at {:?}, store in {:?}", action.time, action.storage);
-            commands::start(action.storage.unwrap_or(default_path))?;
+            let time = action.offset.unwrap_or_default().date_time;
+            debug!("Start at {}, store in {:?}", time, action.storage);
+            commands::start(action.storage.unwrap_or(default_path), time)?;
         }
         Opt::Stop(action) => {
-            debug!("Stop at {:?}, store in {:?}", action.time, action.storage);
-            commands::stop(action.storage.unwrap_or(default_path))?;
+            let time = action.offset.unwrap_or_default().date_time;
+            debug!("Stop at {:?}, store in {:?}", time, action.storage);
+            commands::stop(action.storage.unwrap_or(default_path), time)?;
         }
         Opt::Cancel(action) => {
             debug!("Cancel");
