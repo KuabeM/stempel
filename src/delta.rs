@@ -22,7 +22,7 @@ impl std::fmt::Display for OffsetTime {
 }
 
 pub fn parse_time(src: &str) -> Result<OffsetTime, Error> {
-    let regex: Regex = Regex::new(r"([0-9]+)([h|m|s])([\+-])").unwrap();
+    let regex: Regex = Regex::new(r"([0-9]+)([h|m|s])([\+|-])").unwrap();
 
     let duration = regex
         .captures(src)
