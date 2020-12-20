@@ -27,27 +27,26 @@ pub fn parse_time(src: &str) -> Result<OffsetTime, Error> {
     let duration = regex
         .captures(src)
         .ok_or_else(|| Err::<Captures, Error>(format_err!("Failed to parse {} to DateTime", src)))
-        .and_then(|captures| {
+        .map(|captures| {
             if captures.len() == 4 {
                 let number = &captures[1].parse::<u64>().unwrap();
                 let unit = &captures[2];
                 let sign = if &captures[3] == "+" { 1 } else { -1 };
-                let dur = match unit {
+                match unit {
                     "h" => Duration::hours(*number as i64 * sign),
                     "m" => Duration::minutes(*number as i64 * sign),
                     "s" => Duration::seconds(*number as i64 * sign),
                     _ => unreachable!("Not covered by regex"),
-                };
-                Ok(dur)
+                }
             } else {
-                Ok(Duration::seconds(0))
+                Duration::seconds(0)
             }
         })
         .map_err(|e| format_err!("Regex: {:?}", e))?;
 
     let date_time: DateTime<Utc> = Utc::now()
         .checked_add_signed(duration)
-        .ok_or(format_err!("Failed to construct DateTime"))?;
+        .ok_or_else(|| format_err!("Failed to construct DateTime"))?;
     Ok(OffsetTime { date_time })
 }
 
