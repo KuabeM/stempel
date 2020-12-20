@@ -55,7 +55,9 @@ struct Action {
 }
 
 #[derive(StructOpt, Debug)]
-struct OptPath { path: Option<PathBuf>, }
+struct OptPath {
+    path: Option<PathBuf>,
+}
 
 fn run() -> Result<(), Error> {
     env_logger::from_env(Env::default().default_filter_or("info"))
