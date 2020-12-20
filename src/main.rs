@@ -15,43 +15,47 @@ use month::Month;
 #[derive(StructOpt, Debug)]
 #[structopt(about = "Track the time spent with your fun colleagues")]
 enum Opt {
-    /// Start a working period or a break
+    /// Start a working period.
     Start(Action),
-    /// Stop a working period or a break
+    /// Stop a working period.
     Stop(Action),
-    /// Cancel the last action (Stop can't be undone)
-    Cancel(Action),
-    /// Print statistics about tracked time
+    /// Start or stop a break.
+    Break(StartStop),
+    /// Cancel the last action (Stop can't be undone).
+    Cancel(OptPath),
+    /// Print statistics about tracked time.
     Stats {
-        /// Path to storage file
+        /// Path to storage file.
         #[structopt(short, long)]
         storage: Option<PathBuf>,
-        /// Month of which the stats are shown
+        /// Month of which the stats are shown.
         #[structopt(short, long)]
         month: Option<Month>,
     },
 }
 
-/// Options for structop subcommands
-#[derive(StructOpt, Debug)]
+/// Subcommands for break subcommand.
+#[derive(StructOpt, Debug, PartialEq)]
+enum StartStop {
+    /// Start a break
+    Start(Action),
+    /// Stop a break,
+    Stop(Action),
+}
+
+/// Options for subcommands.
+#[derive(StructOpt, Debug, PartialEq)]
 struct Action {
-    /// Start/Stop break
-    #[structopt(subcommand)]
-    breaking: Option<Break>,
-    /// Time when started
+    /// Offset to current time in format `XX[h|m|s][+-]`.
     #[structopt(short, long, parse(try_from_str = parse_time))]
     offset: Option<OffsetTime>,
-    /// Path to storage file
+    /// Path to storage file.
     #[structopt(short, long)]
     storage: Option<PathBuf>,
 }
 
-#[derive(StructOpt, Debug, PartialEq)]
-enum Break {
-    /// Manage a break
-    #[structopt(name = "break")]
-    Breaking,
-}
+#[derive(StructOpt, Debug)]
+struct OptPath { path: Option<PathBuf>, }
 
 fn run() -> Result<(), Error> {
     env_logger::from_env(Env::default().default_filter_or("info"))
@@ -62,16 +66,6 @@ fn run() -> Result<(), Error> {
     let default_path = PathBuf::from(std::env::var("HOME")? + "/.config/stempel.json");
 
     match Opt::from_args() {
-        Opt::Start(action) if action.breaking.is_some() => {
-            let time = action.offset.unwrap_or_default().date_time;
-            debug!("Start break {}, store {:?}", &time, action.storage);
-            commands::start_break(action.storage.unwrap_or(default_path), time)?;
-        }
-        Opt::Stop(action) if action.breaking.is_some() => {
-            let time = action.offset.unwrap_or_default().date_time;
-            debug!("Stop break {}, store {:?}", time, action.storage);
-            commands::stop_break(action.storage.unwrap_or(default_path), time)?;
-        }
         Opt::Start(action) => {
             let time = action.offset.unwrap_or_default().date_time;
             debug!("Start at {}, store in {:?}", time, action.storage);
@@ -82,10 +76,22 @@ fn run() -> Result<(), Error> {
             debug!("Stop at {:?}, store in {:?}", time, action.storage);
             commands::stop(action.storage.unwrap_or(default_path), time)?;
         }
-        Opt::Cancel(action) => {
+        Opt::Break(startstop) => {
+            let (is_start, action) = match startstop {
+                StartStop::Start(action) => (true, action),
+                StartStop::Stop(action) => (false, action),
+            };
+            let time = action.offset.unwrap_or_default().date_time;
+            let storage = action.storage.unwrap_or(default_path);
+            debug!("Break at {}, store in {:?}", time, storage);
+            match is_start {
+                true => commands::start_break(storage, time)?,
+                false => commands::stop_break(storage, time)?,
+            };
+        }
+        Opt::Cancel(opt) => {
             debug!("Cancel");
-            let breaking = action.breaking.is_some();
-            commands::cancel(action.storage.unwrap_or(default_path), breaking)?;
+            commands::cancel(opt.path.unwrap_or(default_path))?;
         }
         Opt::Stats { storage, month } => {
             debug!("Stats of `{:?}`", storage);

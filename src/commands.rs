@@ -89,21 +89,19 @@ pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error
 /// Remove a previously started Break or Start entry from the storage.
 ///
 /// Returns an Error if the specified type is not in the storage.
-pub fn cancel<P: AsRef<Path>>(storage: P, breaking: bool) -> Result<(), Error> {
+pub fn cancel<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let mut store = WorkStorage::from_file(&storage)?;
-    let ty = if breaking {
-        WorkType::Break
-    } else {
-        WorkType::Start
-    };
-    if store.contains(ty) {
-        store.delete_type(ty);
+    if store.contains(WorkType::Break) {
+        store.delete_type(WorkType::Break);
+        store.write(storage)?;
+        Ok(())
+    } else if store.contains(WorkType::Start) {
+        store.delete_type(WorkType::Start);
         store.write(storage)?;
         Ok(())
     } else {
         Err(format_err!(
-            "You can't cancel a {} which isn't there...",
-            ty
+            "There's neither a Start nor a Break, so nothing to cancel here..."
         ))
     }
 }
