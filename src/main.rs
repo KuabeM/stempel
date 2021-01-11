@@ -71,12 +71,12 @@ fn run() -> Result<(), Error> {
         Opt::Start(action) => {
             let time = action.offset.unwrap_or_default().date_time;
             debug!("Start at {}, store in {:?}", time, action.storage);
-            commands::start(action.storage.unwrap_or(default_path), time)?;
+            commands::control::start(action.storage.unwrap_or(default_path), time)?;
         }
         Opt::Stop(action) => {
             let time = action.offset.unwrap_or_default().date_time;
             debug!("Stop at {:?}, store in {:?}", time, action.storage);
-            commands::stop(action.storage.unwrap_or(default_path), time)?;
+            commands::control::stop(action.storage.unwrap_or(default_path), time)?;
         }
         Opt::Break(startstop) => {
             let (is_start, action) = match startstop {
@@ -87,17 +87,17 @@ fn run() -> Result<(), Error> {
             let storage = action.storage.unwrap_or(default_path);
             debug!("Break at {}, store in {:?}", time, storage);
             match is_start {
-                true => commands::start_break(storage, time)?,
-                false => commands::stop_break(storage, time)?,
+                true => commands::control::start_break(storage, time)?,
+                false => commands::control::stop_break(storage, time)?,
             };
         }
         Opt::Cancel(opt) => {
             debug!("Cancel");
-            commands::cancel(opt.path.unwrap_or(default_path))?;
+            commands::control::cancel(opt.path.unwrap_or(default_path))?;
         }
         Opt::Stats { storage, month } => {
             debug!("Stats of `{:?}`", storage);
-            commands::stats(&storage.unwrap_or(default_path), month)?;
+            commands::stats::stats(&storage.unwrap_or(default_path), month)?;
         }
     }
 
