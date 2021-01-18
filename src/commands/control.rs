@@ -1,7 +1,7 @@
-use crate::storage::WorkSet;
-use crate::storage::{WorkStorage, WorkType};
-use chrono::DateTime;
-use chrono::{Local, Utc};
+//! Handler for the start, stop and break subcommands.
+
+use crate::storage::{WorkSet, WorkStorage, WorkType};
+use chrono::{DateTime, Local, Utc};
 use failure::{bail, format_err, Error};
 use log::{debug, info, warn};
 use std::path::Path;

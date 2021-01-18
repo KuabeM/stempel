@@ -7,6 +7,8 @@
 use chrono::{DateTime, Local, Utc};
 use failure::{bail, format_err, Error};
 use serde::{Deserialize, Serialize};
+
+use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt;
 use std::fs::File;
@@ -17,7 +19,7 @@ use std::time::Duration;
 use crate::month::Month;
 
 /// Different kind of entries in the storage
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub enum WorkType {
     /// Work set with start and duration
     Work,
@@ -51,7 +53,7 @@ impl fmt::Display for WorkType {
 }
 
 /// One entity of work, i.e. either a work day, a start of work or break
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub struct WorkSet {
     pub ty: WorkType,
     pub duration: Duration,
@@ -95,6 +97,17 @@ impl fmt::Display for WorkSet {
         )
     }
 }
+
+impl WorkSet {
+    pub fn year(&self) -> u32 {
+        self.start.date().format("%Y").to_string().parse::<u32>().unwrap_or(0)
+    }
+
+    pub fn month(&self) -> Month {
+        self.start.date().format("%B").to_string().into()
+    }
+}
+
 
 /// Mapping of storage file containing whole datasets of different kinds of work
 #[derive(Serialize, Deserialize, Debug)]
@@ -184,7 +197,7 @@ impl WorkStorage {
         let mut months: Vec<Month> = self
             .work_sets
             .iter()
-            .map(|m| Month::from(m.start.date().format("%B").to_string()))
+            .map(|m| m.month())
             .collect();
         months.sort();
         months.dedup();
@@ -200,6 +213,29 @@ impl WorkStorage {
         weeks.sort();
         weeks.dedup();
         weeks
+    }
+
+    pub fn split_work_by_year(&self) -> HashMap<u32, Vec<&WorkSet>> {
+        let years = self.years();
+        let mut grouped = HashMap::new();
+        for y in years {
+            let work_in_year = self.work_sets.iter()
+                .filter(|w| w.year() == y)
+                .collect();
+            grouped.insert(y, work_in_year);
+        }
+        grouped
+    }
+
+    pub fn years(&self) -> Vec<u32> {
+        let mut years: Vec<u32> = self
+            .work_sets
+            .iter()
+            .map(|w| w.year())
+            .collect();
+        years.sort();
+        years.dedup();
+        years
     }
 
     pub fn filter<P>(&self, predicate: P) -> WorkStorage
