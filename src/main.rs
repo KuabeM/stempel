@@ -8,6 +8,7 @@ mod commands;
 mod delta;
 mod month;
 mod storage;
+mod balance;
 
 use delta::{parse_time, OffsetTime};
 use month::Month;
@@ -32,6 +33,8 @@ enum Opt {
         #[structopt(short, long)]
         month: Option<Month>,
     },
+    /// Migrate json database from old to new format
+    Migrate(OptPath)
 }
 
 /// Subcommands for break subcommand.
@@ -98,6 +101,10 @@ fn run() -> Result<(), Error> {
         Opt::Stats { storage, month } => {
             debug!("Stats of `{:?}`", storage);
             commands::stats::stats(&storage.unwrap_or(default_path), month)?;
+        }
+        Opt::Migrate(opt) => {
+            debug!("Migrate");
+            commands::control::migrate(opt.path.unwrap_or(default_path))?;
         }
     }
 
