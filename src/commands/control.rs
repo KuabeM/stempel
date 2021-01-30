@@ -41,7 +41,7 @@ pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error
     info!(
         "You worked {}:{:02}h today. Enjoy your evening \u{1F389}",
         duration.num_hours(),
-        duration.num_seconds() % 60
+        duration.num_minutes() % 60
     );
     balance.to_file(&storage)?;
 
@@ -69,7 +69,7 @@ pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(),
     info!(
         "You had a break for {}:{}h. Way to go!",
         dur.num_hours(),
-        dur.num_seconds() % 60
+        dur.num_minutes() % 60
     );
     balance.to_file(&storage)?;
     Ok(())
@@ -85,7 +85,7 @@ pub fn start_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()
     info!(
         "Started a break at {}:{}",
         dur.num_hours(),
-        dur.num_seconds() % 60
+        dur.num_minutes() % 60
     );
     balance.to_file(storage)?;
     Ok(())
