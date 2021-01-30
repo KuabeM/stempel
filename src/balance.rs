@@ -39,6 +39,12 @@ impl From<Duration> for DurationDef {
     }
 }
 
+impl From<&DurationDef> for Duration {
+    fn from(dur: &DurationDef) -> Self {
+        dur.inner.clone()
+    }
+}
+
 impl From<DurationDef> for Duration {
     fn from(dur: DurationDef) -> Self {
         dur.inner
@@ -226,6 +232,23 @@ impl TimeBalance {
     }
 }
 
+impl std::fmt::Display for TimeBalance {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (s, d) in self.time_account.iter() {
+            let local = s.with_timezone(&Local).format("%d/%m/%Y, %H:%M");
+            let dur = Duration::from(d);
+            write!(
+                f,
+                "{}: {}:{}h\n",
+                local,
+                dur.num_hours(),
+                dur.num_minutes() % 60
+            )?;
+        }
+        Ok(())
+    }
+}
+
 impl TryFrom<&WorkStorage> for TimeBalance {
     type Error = Error;
     fn try_from(other: &WorkStorage) -> Result<Self, Self::Error> {
@@ -262,9 +285,9 @@ mod tests {
         let naive = NaiveDate::from_ymd(2021, 01, 27).and_hms(14, 19, 21);
         let utc_dt = DateTime::from_utc(naive, chrono::Utc);
         let dur: DurationDef = Duration::seconds(10).into();
-        let input = r#"{"account":{""#.to_string()
+        let input = r#"{"start":null,"breaking":null,"breaks":[],"account":{""#.to_string()
             + &utc_dt.to_rfc3339_opts(SecondsFormat::Secs, true)
-            + r#"":{"secs":10,"nanos":0}},"start":null,"breaking":[]}"#;
+            + r#"":{"secs":10,"nanos":0}}}"#;
         println!("{}", input);
         let balance = TimeBalance::from_reader(&mut input.as_bytes()).expect("Failed to serialize");
 
@@ -286,9 +309,10 @@ mod tests {
 
         let json = std::str::from_utf8(&bytes).expect("Bytes represent a string.");
         println!("{}", json);
-        let json_string = r#"{"account":{""#.to_string()
+        let json_string = r#"{"start":null,"breaking":null,"breaks":[],"account":{""#
+            .to_string()
             + &utc_dt.to_rfc3339_opts(SecondsFormat::Secs, true)
-            + r#"":{"secs":10,"nanos":0}},"start":null,"started_break":null,"breaking":[]}"#;
+            + r#"":{"secs":10,"nanos":0}}}"#;
         assert_eq!(json, json_string);
     }
 

@@ -5,6 +5,7 @@
 //use crate::commands::control::time_from_duration;
 use crate::month::Month;
 use crate::storage::{WorkStorage, WorkType};
+use crate::balance::TimeBalance;
 
 use colored::*;
 use failure::{bail, Error};
@@ -16,24 +17,28 @@ use std::time::Duration;
 ///
 /// Handler for the `stats` sub command.
 pub fn stats<P: AsRef<Path>>(storage: P, month: Option<Month>) -> Result<(), Error> {
-    if !storage.as_ref().exists() {
-        bail!(
-            "There is no time storage {:?}, start working first. It creates the file if necessary",
-            storage.as_ref()
-        );
-    }
-    let store = WorkStorage::from_file(&storage)?;
-    match month {
-        Some(m) => monthly_stats(&storage, m),
-        None => {
-            if store.work_sets.len() < 6 {
-                info!("{}", store.stats());
-                Ok(())
-            } else {
-                all_monthly_stats(&storage)
-            }
-        }
-    }
+    // if !storage.as_ref().exists() {
+    //     bail!(
+    //         "There is no time storage {:?}, start working first. It creates the file if necessary",
+    //         storage.as_ref()
+    //     );
+    // }
+    // let store = WorkStorage::from_file(&storage)?;
+    // match month {
+    //     Some(m) => monthly_stats(&storage, m),
+    //     None => {
+    //         if store.work_sets.len() < 6 {
+    //             info!("{}", store.stats());
+    //             Ok(())
+    //         } else {
+    //             all_monthly_stats(&storage)
+    //         }
+    //     }
+    // }
+    let balance = TimeBalance::from_file(&storage)?;
+
+    info!("{}", balance);
+    Ok(())
 }
 
 /// Prints all entry of all months in `storage`.
