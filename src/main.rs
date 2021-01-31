@@ -4,11 +4,11 @@ use log::debug;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+mod balance;
 mod commands;
 mod delta;
 mod month;
 mod storage;
-mod balance;
 
 use delta::{parse_time, OffsetTime};
 use month::Month;
@@ -34,7 +34,7 @@ enum Opt {
         month: Option<Month>,
     },
     /// Migrate json database from old to new format
-    Migrate(OptPath)
+    Migrate(OptPath),
 }
 
 /// Subcommands for break subcommand.

@@ -57,7 +57,7 @@ fn monthly_stats<P: AsRef<Path>>(storage: P, year: i32, month: Month) -> Result<
     let month_entries: Vec<(&DateTime<Utc>, &DurationDef)> =
         balance.month_range(year, month).collect();
 
-    if month_entries.len() > 0{
+    if month_entries.len() > 0 {
         println!("Account in {}:", month.name().green());
         let mut cur_w = 0;
         for (week, group) in &month_entries.into_iter().group_by(|e| {

@@ -35,8 +35,8 @@ pub fn start<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Erro
 /// `storage` points to the json storage file. Throws an error if there is no
 /// such storage yet.
 pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
-    let mut balance =
-        TimeBalance::from_file(&storage, false).map_err(|e| format_err!("There is no database: {}", e))?;
+    let mut balance = TimeBalance::from_file(&storage, false)
+        .map_err(|e| format_err!("There is no database: {}", e))?;
     let duration = balance.stop(time)?;
     info!(
         "You worked {}:{:02}h today. Enjoy your evening \u{1F389}",

@@ -8,7 +8,6 @@ use chrono::{DateTime, Local, Utc};
 use failure::{bail, format_err, Error};
 use serde::{Deserialize, Serialize};
 
-
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt;
@@ -101,14 +100,18 @@ impl fmt::Display for WorkSet {
 
 impl WorkSet {
     pub fn year(&self) -> u32 {
-        self.start.date().format("%Y").to_string().parse::<u32>().unwrap_or(0)
+        self.start
+            .date()
+            .format("%Y")
+            .to_string()
+            .parse::<u32>()
+            .unwrap_or(0)
     }
 
     pub fn month(&self) -> Month {
         self.start.date().format("%B").to_string().into()
     }
 }
-
 
 /// Mapping of storage file containing whole datasets of different kinds of work
 #[derive(Serialize, Deserialize, Debug)]
@@ -195,11 +198,7 @@ impl WorkStorage {
     }
 
     pub fn months(&self) -> Vec<Month> {
-        let mut months: Vec<Month> = self
-            .work_sets
-            .iter()
-            .map(|m| m.month())
-            .collect();
+        let mut months: Vec<Month> = self.work_sets.iter().map(|m| m.month()).collect();
         months.sort();
         months.dedup();
         months
@@ -220,20 +219,14 @@ impl WorkStorage {
         let years = self.years();
         let mut grouped = HashMap::new();
         for y in years {
-            let work_in_year = self.work_sets.iter()
-                .filter(|w| w.year() == y)
-                .collect();
+            let work_in_year = self.work_sets.iter().filter(|w| w.year() == y).collect();
             grouped.insert(y, work_in_year);
         }
         grouped
     }
 
     pub fn years(&self) -> Vec<u32> {
-        let mut years: Vec<u32> = self
-            .work_sets
-            .iter()
-            .map(|w| w.year())
-            .collect();
+        let mut years: Vec<u32> = self.work_sets.iter().map(|w| w.year()).collect();
         years.sort();
         years.dedup();
         years
