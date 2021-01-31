@@ -2,11 +2,11 @@
 
 use chrono::{Datelike, Local};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
+use std::{convert::TryFrom, ops::Sub};
 
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
 #[repr(u8)]
 pub enum Month {
     January = 1,
@@ -35,6 +35,16 @@ impl From<String> for Month {
     }
 }
 
+impl Sub for Month {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        let intermediate = self as u8 + 12u8 - other as u8;
+        dbg!(&intermediate);
+            Self::try_from(intermediate % 12).expect("works")
+    }
+}
+
 impl FromStr for Month {
     type Err = String;
 
@@ -57,8 +67,14 @@ impl FromStr for Month {
                 let month = now.month();
                 Month::try_from(month as u8).map_err(|e| e.to_string())
             }
-            &_ => Err(format!("Failed to parse {} into month", s)),
+            &_ => Err(format!("Failed to parse '{}' into month", s)),
         }
+    }
+}
+
+impl From<&str> for Month {
+    fn from(other: &str) -> Self {
+        Self::from_str(other).unwrap()
     }
 }
 

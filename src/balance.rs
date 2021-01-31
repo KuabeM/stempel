@@ -176,11 +176,20 @@ impl TimeBalance {
 
     pub fn month_range(
         &self,
-        year: u32,
-        month: u32,
+        year: i32,
+        month: Month,
     ) -> impl Iterator<Item = (&DateTime<Utc>, &DurationDef)> {
-        let lower = Utc.ymd(year as i32, month, 1).and_hms(0, 0, 0);
-        let upper = Utc.ymd(year as i32, month, 31).and_hms(23, 59, 59);
+        let days_in_m = if month.number_from_month() == 12 {
+            Utc.ymd(year + 1, month.succ().number_from_month(), 1)
+                .signed_duration_since(Utc.ymd(year, month.number_from_month(), 1))
+                .num_days()
+        } else {
+            Utc.ymd(year, month.succ().number_from_month() , 1)
+                .signed_duration_since(Utc.ymd(year, month.number_from_month(), 1))
+                .num_days()
+        };
+        let lower = Utc.ymd(year, month.number_from_month(), 1).and_hms(0, 0, 0);
+        let upper = Utc.ymd(year, month.number_from_month(), days_in_m as u32).and_hms(23, 59, 59);
         self.range(lower, upper)
     }
 
@@ -206,13 +215,14 @@ impl TimeBalance {
             .map_err(|e| format_err!("Failed to serialize to json: {}", e))
     }
 
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+    pub fn from_file<P: AsRef<Path>>(path: P, create: bool) -> Result<Self, Error> {
         match File::open(&path) {
             Ok(f) => {
                 let mut reader = BufReader::new(f);
                 Self::from_reader(&mut reader)
             }
-            Err(_) => Ok(TimeBalance::new()),
+            Err(_) if create => Ok(TimeBalance::new()),
+            Err(e) => bail!("Failed to open database: {}", e),
         }
     }
 
@@ -309,8 +319,7 @@ mod tests {
 
         let json = std::str::from_utf8(&bytes).expect("Bytes represent a string.");
         println!("{}", json);
-        let json_string = r#"{"start":null,"breaking":null,"breaks":[],"account":{""#
-            .to_string()
+        let json_string = r#"{"start":null,"breaking":null,"breaks":[],"account":{""#.to_string()
             + &utc_dt.to_rfc3339_opts(SecondsFormat::Secs, true)
             + r#"":{"secs":10,"nanos":0}}}"#;
         assert_eq!(json, json_string);
