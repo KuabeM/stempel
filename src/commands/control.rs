@@ -14,7 +14,7 @@ use std::{convert::TryFrom, path::Path};
 /// does not exist. Returns an error if there already exists a start entry in
 /// the storage.
 pub fn start<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
-    let mut balance = TimeBalance::from_file(&storage)?;
+    let mut balance = TimeBalance::from_file(&storage, true)?;
     balance.start(time).map_err(|e| {
         format_err!(
             "You already started at {}",
@@ -36,7 +36,7 @@ pub fn start<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Erro
 /// such storage yet.
 pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
     let mut balance =
-        TimeBalance::from_file(&storage).map_err(|e| format_err!("There is no database: {}", e))?;
+        TimeBalance::from_file(&storage, false).map_err(|e| format_err!("There is no database: {}", e))?;
     let duration = balance.stop(time)?;
     info!(
         "You worked {}:{:02}h today. Enjoy your evening \u{1F389}",
@@ -53,7 +53,7 @@ pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error
 ///
 /// `storage` is the path pointing to the database file.
 pub fn cancel<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
-    let mut balance = TimeBalance::from_file(&storage)?;
+    let mut balance = TimeBalance::from_file(&storage, false)?;
     balance.cancel()?;
     balance.to_file(&storage)?;
     Ok(())
@@ -64,7 +64,7 @@ pub fn cancel<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 /// Handler of `break stop` subcommand. `storage` is the json storage file. Throws an error if there
 /// is no stared break in the database.
 pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
-    let mut balance = TimeBalance::from_file(&storage)?;
+    let mut balance = TimeBalance::from_file(&storage, false)?;
     let dur = balance.finish_break(time)?;
     info!(
         "You had a break for {}:{}h. Way to go!",
@@ -80,7 +80,7 @@ pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(),
 /// Handler of the `break start` subcommand. `storage` is the database file. Throws an error if there is no start
 /// entry in the database.
 pub fn start_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
-    let mut balance = TimeBalance::from_file(&storage)?;
+    let mut balance = TimeBalance::from_file(&storage, false)?;
     let dur = balance.start_break(time)?;
     info!(
         "Started a break at {}:{}",
