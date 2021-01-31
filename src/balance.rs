@@ -184,12 +184,14 @@ impl TimeBalance {
                 .signed_duration_since(Utc.ymd(year, month.number_from_month(), 1))
                 .num_days()
         } else {
-            Utc.ymd(year, month.succ().number_from_month() , 1)
+            Utc.ymd(year, month.succ().number_from_month(), 1)
                 .signed_duration_since(Utc.ymd(year, month.number_from_month(), 1))
                 .num_days()
         };
         let lower = Utc.ymd(year, month.number_from_month(), 1).and_hms(0, 0, 0);
-        let upper = Utc.ymd(year, month.number_from_month(), days_in_m as u32).and_hms(23, 59, 59);
+        let upper = Utc
+            .ymd(year, month.number_from_month(), days_in_m as u32)
+            .and_hms(23, 59, 59);
         self.range(lower, upper)
     }
 

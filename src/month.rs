@@ -41,7 +41,7 @@ impl Sub for Month {
     fn sub(self, other: Self) -> Self {
         let intermediate = self as u8 + 12u8 - other as u8;
         dbg!(&intermediate);
-            Self::try_from(intermediate % 12).expect("works")
+        Self::try_from(intermediate % 12).expect("works")
     }
 }
 
