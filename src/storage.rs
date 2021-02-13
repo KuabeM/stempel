@@ -8,15 +8,12 @@ use chrono::{DateTime, Local, Utc};
 use failure::{bail, format_err, Error};
 use serde::{Deserialize, Serialize};
 
-use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::time::Duration;
-
-use crate::month::Month;
 
 /// Different kind of entries in the storage
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -60,16 +57,6 @@ pub struct WorkSet {
     pub start: DateTime<Utc>,
 }
 
-impl WorkSet {
-    pub fn new(ty: WorkType, duration: Duration, start: DateTime<Utc>) -> Self {
-        WorkSet {
-            ty,
-            duration,
-            start,
-        }
-    }
-}
-
 impl fmt::Display for WorkSet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let now: DateTime<Utc> = Utc::now();
@@ -95,21 +82,6 @@ impl fmt::Display for WorkSet {
             dur.num_minutes() - dur.num_hours() * 60,
             msg.1
         )
-    }
-}
-
-impl WorkSet {
-    pub fn year(&self) -> u32 {
-        self.start
-            .date()
-            .format("%Y")
-            .to_string()
-            .parse::<u32>()
-            .unwrap_or(0)
-    }
-
-    pub fn month(&self) -> Month {
-        self.start.date().format("%B").to_string().into()
     }
 }
 
@@ -153,18 +125,6 @@ impl WorkStorage {
         }
     }
 
-    pub fn name(&self) -> &String {
-        &self.name
-    }
-
-    pub fn add_set(&mut self, set: WorkSet) {
-        self.work_sets.push(set);
-    }
-
-    pub fn stats(&self) -> String {
-        self.to_string()
-    }
-
     pub fn try_start(&self) -> Result<WorkSet, Error> {
         let start = self
             .work_sets
@@ -191,69 +151,6 @@ impl WorkStorage {
             Some(s) => Ok(s),
             None => Err(format_err!("You deserve that break")),
         }
-    }
-
-    pub fn delete_type(&mut self, ty: WorkType) {
-        self.work_sets.retain(|w| w.ty != ty);
-    }
-
-    pub fn months(&self) -> Vec<Month> {
-        let mut months: Vec<Month> = self.work_sets.iter().map(|m| m.month()).collect();
-        months.sort();
-        months.dedup();
-        months
-    }
-
-    pub fn weeks(&self) -> Vec<String> {
-        let mut weeks: Vec<String> = self
-            .work_sets
-            .iter()
-            .map(|m| m.start.date().format("%W").to_string())
-            .collect();
-        weeks.sort();
-        weeks.dedup();
-        weeks
-    }
-
-    pub fn split_work_by_year(&self) -> HashMap<u32, Vec<&WorkSet>> {
-        let years = self.years();
-        let mut grouped = HashMap::new();
-        for y in years {
-            let work_in_year = self.work_sets.iter().filter(|w| w.year() == y).collect();
-            grouped.insert(y, work_in_year);
-        }
-        grouped
-    }
-
-    pub fn years(&self) -> Vec<u32> {
-        let mut years: Vec<u32> = self.work_sets.iter().map(|w| w.year()).collect();
-        years.sort();
-        years.dedup();
-        years
-    }
-
-    pub fn filter<P>(&self, predicate: P) -> WorkStorage
-    where
-        P: Fn(&WorkSet) -> bool,
-    {
-        let work_sets: Vec<WorkSet> = self
-            .work_sets
-            .clone()
-            .into_iter()
-            .filter(|w| predicate(w))
-            .collect();
-        WorkStorage {
-            name: self.name.clone(),
-            work_sets,
-        }
-    }
-
-    pub fn contains(&self, ty: WorkType) -> bool {
-        !self.filter(|w| w.ty == ty).is_empty()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.work_sets.is_empty()
     }
 }
 

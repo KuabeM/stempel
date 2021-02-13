@@ -33,7 +33,8 @@ enum Opt {
         #[structopt(short, long)]
         month: Option<Month>,
     },
-    /// Migrate json database from old to new format
+    /// Migrate json database from old to new format, creates backup file
+    /// `*.bak` overwriting the original.
     Migrate(OptPath),
 }
 
