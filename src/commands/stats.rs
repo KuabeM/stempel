@@ -2,7 +2,7 @@
 //!
 //! The main entry point is `stats` which then further decides what to do.
 
-use crate::balance::{DurationDef, TimeBalance};
+use crate::balance::{BrakeState, DurationDef, TimeBalance};
 
 use chrono::{DateTime, Datelike, Month, Utc};
 use colored::*;
@@ -31,6 +31,9 @@ pub fn stats<P: AsRef<Path>>(storage: P, month: Option<crate::month::Month>) -> 
         monthly_stats(&balance, year, m.pred());
         monthly_stats(&balance, year, m);
     }
+
+    println!();
+    show_state(&balance);
 
     Ok(())
 }
@@ -62,5 +65,33 @@ fn monthly_stats(balance: &TimeBalance, year: i32, month: Month) {
                 dur.num_minutes() % 60
             );
         }
+    }
+}
+
+/// Print current state of started work, running and finished breaks.
+fn show_state(balance: &TimeBalance) {
+    if let Some((dur, start)) = balance.start_state() {
+        println!(
+            "Started at {}, worked {:02}:{:02}h since then.",
+            start.with_timezone(&chrono::Local).format("%H:%M"),
+            dur.num_hours(),
+            dur.num_minutes() % 60
+        );
+    }
+    match balance.break_state() {
+        BrakeState::Started(d, s) => {
+            println!(
+                "You're on a break since {}, total break duration today is {:02}:{:02}h.",
+                s.with_timezone(&chrono::Local).format("%H:%M"),
+                d.num_hours(),
+                d.num_minutes() % 60
+            )
+        }
+        BrakeState::Finished(d) => println!(
+            "Your breaks lasted {:02}:{:02}h.",
+            d.num_hours(),
+            d.num_minutes() % 60
+        ),
+        BrakeState::NotActive => {},
     }
 }

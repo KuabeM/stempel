@@ -1,8 +1,7 @@
-//! The `storage` module implements the logic for storing the specific work
-//! entities.
+//! __Deprecated__. The `storage` module implements the logic for storing the specific work
+//! entities. Deprecated in favor of the balance module.
 //!
-//! It does not contain much business logic of handling inputs/outputs or
-//! calculations, it's intended to wrap the information stored in a file.
+//! Only kept around to support migrating from the old storage format.
 
 use chrono::{DateTime, Local, Utc};
 use failure::{bail, format_err, Error};
