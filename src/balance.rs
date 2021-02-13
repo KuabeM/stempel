@@ -256,6 +256,40 @@ impl TimeBalance {
             }
         }
     }
+
+    /// Get start point and duration since then. None if there is no start entry.
+    pub fn start_state(&self) -> Option<(Duration, DateTime<Utc>)> {
+        if let Some(s) = self.start {
+            let dur = Utc::now().signed_duration_since(s);
+            Some((dur, s))
+        } else {
+            None
+        }
+    }
+
+    /// Get start and duration of break if any
+    pub fn break_state(&self) -> BrakeState {
+        if self.start.is_none() {
+            return BrakeState::NotActive
+        }
+        let dur = self.accumulate_breaks();
+        if let Some(breaking) = self.breaking {
+            let sum = Utc::now()
+                .signed_duration_since(breaking)
+                .checked_add(&dur)
+                .unwrap_or(dur);
+            BrakeState::Started(sum, breaking)
+        } else {
+            BrakeState::Finished(dur)
+        }
+    }
+}
+
+/// Helper Enum for returning useful states.
+pub(crate) enum BrakeState {
+    Started(Duration, DateTime<Utc>),
+    Finished(Duration),
+    NotActive,
 }
 
 impl std::fmt::Display for TimeBalance {

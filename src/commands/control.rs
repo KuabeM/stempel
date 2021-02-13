@@ -56,6 +56,7 @@ pub fn cancel<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let mut balance = TimeBalance::from_file(&storage, false)?;
     balance.cancel()?;
     balance.to_file(&storage)?;
+    info!("Canceled last action.");
     Ok(())
 }
 
