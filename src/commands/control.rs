@@ -48,8 +48,8 @@ pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error
     Ok(())
 }
 
-/// Cancels a break if present, otherwise the start or throws an error. Handler of the
-/// `cancel` subcommand.
+/// Cancels a break if present, otherwise the start or throws an error. Handler
+/// of the `cancel` subcommand.
 ///
 /// `storage` is the path pointing to the database file.
 pub fn cancel<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
@@ -61,8 +61,8 @@ pub fn cancel<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 
 /// Stop a 'break', calculates the duration and writes it to the database.
 ///
-/// Handler of `break stop` subcommand. `storage` is the json storage file. Throws an error if there
-/// is no stared break in the database.
+/// Handler of `break stop` subcommand. `storage` is the json storage file.
+/// Throws an error if there is no stared break in the database.
 pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
     let mut balance = TimeBalance::from_file(&storage, false)?;
     let dur = balance.finish_break(time)?;
@@ -77,8 +77,8 @@ pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(),
 
 /// Start a 'break' by adding a `break` entry to the database.
 ///
-/// Handler of the `break start` subcommand. `storage` is the database file. Throws an error if there is no start
-/// entry in the database.
+/// Handler of the `break start` subcommand. `storage` is the database file.
+/// Throws an error if there is no start entry in the database.
 pub fn start_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
     let mut balance = TimeBalance::from_file(&storage, false)?;
     let dur = balance.start_break(time)?;

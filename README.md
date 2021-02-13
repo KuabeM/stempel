@@ -5,21 +5,38 @@
 
 Small utility to store and calculate the time spent at work.
 
+> :warning: v0.10.0 introduces a new storage file format. Run `stempel migrate`
+> to update your json database to the new format.
+
 ## Usage
 
+Example for managing one day:
+
 ```bash
-  stempel <SUBCOMMAND> (-s <file>)
+# start working now
+stempel start
+# start a break five minutes ago
+stempel break start --offset 5m-
+# optional: break can be canceled:
+stempel cancel
+# finish break in one hour (only if not canceled above)
+stempel break stop --offset 1h+
+# Finish the day
+stempel stop
 ```
 
-where the available subcommands are
+For a detailed reference, run `stempel help` or `stempel SUBCOMMAND --help`.
+Available subcommands are:
 
-  - `start`: start a working period, aborts if you already started previously,
-  - `stop`: checks if a `start` entry is in the storage `file` and calculates
-    the working time, aborts if no `start` entry is found,
-  - `break`: use `start` or `stop` as subcommand to handle breaks,
   - `cancel`s the last break, start or does nothing if no break or start in the
     storage,
+  - `break`: use `start` or `stop` as subcommand to handle breaks,
+  - `migrate`: migrate storage file from old (before 0.10.0) to new format
+    (since v0.10.0)
+  - `start`: start a working period, aborts if you already started previously,
   - `stats` prints current statistics.
+  - `stop`: checks if a `start` entry is in the storage `file` and calculates
+    the working time, aborts if no `start` entry is found,
 
 ### Options:
 
@@ -37,16 +54,16 @@ Specifiy a path to the storage file where all work entries are written to. The
 path defaults to `$HOME/.config/stempel.json` and is created on the first
 invocation of the `start` subcommand.
 
-## Planned Features
+## Features
 
   - Statistics:
-    * [x] pretty printinng
-    * [x] provide weekly, monthly,... statistics
+    * [x] statistics of last two months grouped by weeks
     * [ ] allow printing only ranges of stats, e.g. months, years...
+    * [ ] display long hours
   - [ ] Tracking: allow to specify start and stop time as cli arg
   - [x] Tracking: cancel started work
-  - [x] Specify an offset from current time when starting or stoping
-  - [ ] Storage: don't store as seconds and nanoseconds, use something more verbose?
+  - [x] Specify an offset from current time when starting or stopping
+  - [ ] Add more possibilities to offset
 
 ## License
 

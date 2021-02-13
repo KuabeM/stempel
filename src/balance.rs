@@ -1,3 +1,7 @@
+//! Model of time balance.
+//!
+//! Load, write and manipulate the working time balance.
+
 use chrono::prelude::*;
 use chrono::Duration;
 
@@ -12,12 +16,13 @@ use std::{
     io::{BufReader, Read, Write},
 };
 
-fn nanoseconds(dur: &Duration) -> i32 {
+fn nanoseconds(_dur: &Duration) -> i32 {
     0i32
 }
 
 use crate::storage::WorkStorage;
 
+/// Alias for chrono::Duration with serde support.
 #[derive(Serialize, Deserialize)]
 #[serde(remote = "Duration")]
 struct ChronoDuration {
@@ -41,7 +46,7 @@ impl From<Duration> for DurationDef {
 
 impl From<&DurationDef> for Duration {
     fn from(dur: &DurationDef) -> Self {
-        dur.inner.clone()
+        dur.inner
     }
 }
 
@@ -57,6 +62,7 @@ impl ToString for DurationDef {
     }
 }
 
+/// Wrapper around chrono::Duration for serde support
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub(crate) struct DurationDef {
     #[serde(flatten)]
@@ -64,6 +70,12 @@ pub(crate) struct DurationDef {
     inner: Duration,
 }
 
+/// A storage for completed and started work sets as well as started and
+/// completed breaks.
+///
+/// Completed work sets are stored in a hash map with entries
+/// `(start, duration)`. If a break or work is running, the corresponding
+/// options hold the respective start time.
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub(crate) struct TimeBalance {
     start: Option<DateTime<Utc>>,
@@ -83,18 +95,19 @@ impl TimeBalance {
         }
     }
 
+    /// Clears starts and breaks to b ready for a new work day.
     pub(crate) fn reset(&mut self) {
         self.start = None;
         self.breaks.clear();
     }
 
+    /// Remove a started break or a started work if no break exists.
     pub(crate) fn cancel(&mut self) -> Result<(), Error> {
         match self.breaking {
             None => self
                 .start
-                .and_then(|_| {
+                .map(|_| {
                     self.start = None;
-                    Some(())
                 })
                 .ok_or_else(|| format_err!("Nothing to cancel")),
             Some(_) => {
@@ -104,6 +117,7 @@ impl TimeBalance {
         }
     }
 
+    /// Add a start time to balance.
     pub(crate) fn start(&mut self, time: DateTime<Utc>) -> Result<(), DateTime<Utc>> {
         match self.start {
             None => {
@@ -114,6 +128,8 @@ impl TimeBalance {
         }
     }
 
+    /// Stop the started time, calculate the duration by resolving all breaks
+    /// and the time since start.
     pub(crate) fn stop(&mut self, time: DateTime<Utc>) -> Result<Duration, Error> {
         let start = self
             .start
@@ -128,23 +144,25 @@ impl TimeBalance {
         Ok(duration)
     }
 
+    /// Sum up duration of all finished breaks.
     pub(crate) fn accumulate_breaks(&self) -> Duration {
         self.breaks
             .iter()
             .fold(Duration::seconds(0), |acc, b| acc + b.clone().into())
     }
 
+    /// Add `time` as start of break.
     pub(crate) fn start_break(&mut self, time: DateTime<Utc>) -> Result<Duration, Error> {
         self.start
-            .and_then(|s| {
+            .map(|s| {
                 // TODO: check if there is a break already
                 self.breaking = Some(time);
-                let dur = time.signed_duration_since(s);
-                Some(dur)
+                time.signed_duration_since(s)
             })
             .ok_or_else(|| format_err!("You're not tracking your work so you can't take a break"))
     }
 
+    /// Calculate duration of current break.
     pub(crate) fn finish_break(&mut self, time: DateTime<Utc>) -> Result<Duration, Error> {
         self.start
             .ok_or_else(|| format_err!("You can't break if you haven't started."))?;
@@ -159,6 +177,7 @@ impl TimeBalance {
         Ok(dur)
     }
 
+    /// Extract all entries in map between two time points.
     fn range(
         &self,
         lower: DateTime<Utc>,
@@ -168,12 +187,7 @@ impl TimeBalance {
         self.time_account.range(range)
     }
 
-    pub fn year_range(&self, year: u32) -> impl Iterator<Item = (&DateTime<Utc>, &DurationDef)> {
-        let lower = Utc.ymd(year as i32, 1, 1).and_hms(0, 0, 0);
-        let upper = Utc.ymd(year as i32, 12, 31).and_hms(23, 59, 59);
-        self.range(lower, upper)
-    }
-
+    /// Extract all entries from within one month.
     pub fn month_range(
         &self,
         year: i32,
@@ -195,20 +209,18 @@ impl TimeBalance {
         self.range(lower, upper)
     }
 
-    pub fn group_by_week(&self) -> () {
-        // impl Iterator<Item = (&DateTime<Utc>, &Set)> {
-        unimplemented!();
-    }
-
+    /// Insert a start time and the corresponding duration into map.
     pub(crate) fn insert(&mut self, dt: DateTime<Utc>, dur: DurationDef) {
         self.time_account.insert(dt, dur);
     }
 
+    /// Deserialize json buffer.
     fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
         serde_json::from_reader(reader)
-            .map_err(|e| format_err!("Failed to deserialize json: {}", e))
+            .map_err(|e| format_err!("Failed to deserialize json: {}. Try 'stempel migrate' to migrate to new json format.", e))
     }
 
+    /// Serialize time balance to json.
     fn write<W>(&self, writer: &mut W) -> Result<(), Error>
     where
         W: Write,
@@ -217,6 +229,7 @@ impl TimeBalance {
             .map_err(|e| format_err!("Failed to serialize to json: {}", e))
     }
 
+    /// Read from json file.
     pub fn from_file<P: AsRef<Path>>(path: P, create: bool) -> Result<Self, Error> {
         match File::open(&path) {
             Ok(f) => {
@@ -228,6 +241,7 @@ impl TimeBalance {
         }
     }
 
+    /// Write time balance to json file.
     pub fn to_file<P: AsRef<Path>>(&self, path: P) -> Result<(), Error> {
         match OpenOptions::new().write(true).truncate(true).open(&path) {
             Ok(mut f) => self.write(&mut f),
@@ -249,9 +263,9 @@ impl std::fmt::Display for TimeBalance {
         for (s, d) in self.time_account.iter() {
             let local = s.with_timezone(&Local).format("%d/%m/%Y, %H:%M");
             let dur = Duration::from(d);
-            write!(
+            writeln!(
                 f,
-                "{}: {}:{}h\n",
+                "{}: {}:{}h",
                 local,
                 dur.num_hours(),
                 dur.num_minutes() % 60
@@ -294,7 +308,7 @@ mod tests {
 
     #[test]
     fn from_file_works() {
-        let naive = NaiveDate::from_ymd(2021, 01, 27).and_hms(14, 19, 21);
+        let naive = NaiveDate::from_ymd(2021, 1, 27).and_hms(14, 19, 21);
         let utc_dt = DateTime::from_utc(naive, chrono::Utc);
         let dur: DurationDef = Duration::seconds(10).into();
         let input = r#"{"start":null,"breaking":null,"breaks":[],"account":{""#.to_string()
@@ -311,7 +325,7 @@ mod tests {
     #[test]
     fn to_json_works() {
         let mut balance = TimeBalance::new();
-        let naive = NaiveDate::from_ymd(2021, 01, 27).and_hms(14, 19, 21);
+        let naive = NaiveDate::from_ymd(2021, 1, 27).and_hms(14, 19, 21);
         let utc_dt = DateTime::from_utc(naive, chrono::Utc);
         let dur = Duration::seconds(10).into();
         balance.insert(utc_dt, dur);
