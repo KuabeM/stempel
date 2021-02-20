@@ -92,6 +92,6 @@ fn show_state(balance: &TimeBalance) {
             d.num_hours(),
             d.num_minutes() % 60
         ),
-        BrakeState::NotActive => {},
+        BrakeState::NotActive => {}
     }
 }

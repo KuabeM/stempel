@@ -270,7 +270,7 @@ impl TimeBalance {
     /// Get start and duration of break if any
     pub fn break_state(&self) -> BrakeState {
         if self.start.is_none() {
-            return BrakeState::NotActive
+            return BrakeState::NotActive;
         }
         let dur = self.accumulate_breaks();
         if let Some(breaking) = self.breaking {
