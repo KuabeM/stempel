@@ -3,8 +3,8 @@
 use crate::balance::TimeBalance;
 
 use chrono::{DateTime, Local, Utc};
+use colored::*;
 use failure::{format_err, Error};
-use log::info;
 use std::{convert::TryFrom, path::Path};
 
 /// Handles the start of a working period and breaks called by subcommand
@@ -21,9 +21,13 @@ pub fn start<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Erro
             e.with_timezone(&Local).time().format("%H:%M")
         )
     })?;
-    info!(
+    println!(
         "You started at {}, let's go!",
-        time.with_timezone(&Local).time().format("%H:%M")
+        time.with_timezone(&Local)
+            .time()
+            .format("%H:%M")
+            .to_string()
+            .green()
     );
     balance.to_file(storage)?;
 
@@ -38,7 +42,7 @@ pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error
     let mut balance = TimeBalance::from_file(&storage, false)
         .map_err(|e| format_err!("There is no database: {}", e))?;
     let duration = balance.stop(time)?;
-    info!(
+    println!(
         "You worked {}:{:02}h today. Enjoy your evening \u{1F389}",
         duration.num_hours(),
         duration.num_minutes() % 60
@@ -56,7 +60,7 @@ pub fn cancel<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
     let mut balance = TimeBalance::from_file(&storage, false)?;
     balance.cancel()?;
     balance.to_file(&storage)?;
-    info!("Canceled last action.");
+    println!("Canceled last action.");
     Ok(())
 }
 
@@ -67,7 +71,7 @@ pub fn cancel<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
     let mut balance = TimeBalance::from_file(&storage, false)?;
     let dur = balance.finish_break(time)?;
-    info!(
+    println!(
         "You had a break for {}:{}h. Way to go!",
         dur.num_hours(),
         dur.num_minutes() % 60
@@ -83,7 +87,7 @@ pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(),
 pub fn start_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
     let mut balance = TimeBalance::from_file(&storage, false)?;
     let dur = balance.start_break(time)?;
-    info!(
+    println!(
         "Started a break at {}:{}",
         dur.num_hours(),
         dur.num_minutes() % 60

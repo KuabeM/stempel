@@ -66,7 +66,6 @@ struct OptPath {
 fn run() -> Result<(), Error> {
     env_logger::from_env(Env::default().default_filter_or("info"))
         .format_timestamp(None)
-        .format_module_path(false)
         .init();
 
     let default_path = PathBuf::from(std::env::var("HOME")? + "/.config/stempel.json");

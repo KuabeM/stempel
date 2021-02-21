@@ -193,6 +193,7 @@ impl TimeBalance {
         year: i32,
         month: Month,
     ) -> impl Iterator<Item = (&DateTime<Utc>, &DurationDef)> {
+        log::trace!("Range for month {:?}", month);
         let days_in_m = if month.number_from_month() == 12 {
             Utc.ymd(year + 1, month.succ().number_from_month(), 1)
                 .signed_duration_since(Utc.ymd(year, month.number_from_month(), 1))
@@ -202,10 +203,12 @@ impl TimeBalance {
                 .signed_duration_since(Utc.ymd(year, month.number_from_month(), 1))
                 .num_days()
         };
+        log::trace!("Days in month {:?}: {}", month, days_in_m);
         let lower = Utc.ymd(year, month.number_from_month(), 1).and_hms(0, 0, 0);
         let upper = Utc
             .ymd(year, month.number_from_month(), days_in_m as u32)
             .and_hms(23, 59, 59);
+        log::trace!("Lower: {:?}, Upper: {:?}", lower, upper);
         self.range(lower, upper)
     }
 

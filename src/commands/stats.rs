@@ -8,7 +8,6 @@ use chrono::{DateTime, Datelike, Month, Utc};
 use colored::*;
 use failure::{format_err, Error};
 use itertools::Itertools;
-use log::info;
 use num_traits::FromPrimitive;
 
 use std::path::Path;
@@ -23,13 +22,10 @@ pub fn stats<P: AsRef<Path>>(storage: P, month: Option<crate::month::Month>) -> 
         let m = Month::from_u8(m as u8).ok_or_else(|| format_err!("Failed to parse month"))?;
         monthly_stats(&balance, year, m);
     } else {
-        // let month = Month::from("now");
         let m = Month::from_u32(Utc::now().month())
             .ok_or_else(|| format_err!("Failed to parse current month"))?;
-        info!("Here are your stats for the last 2 months:",);
-        monthly_stats(&balance, year, m.pred().pred());
-        monthly_stats(&balance, year, m.pred());
-        monthly_stats(&balance, year, m);
+        println!("Here are your stats for the last 2 months:",);
+        stats_last_month(&balance, year, m, 2);
     }
 
     println!();
@@ -38,10 +34,33 @@ pub fn stats<P: AsRef<Path>>(storage: P, month: Option<crate::month::Month>) -> 
     Ok(())
 }
 
+/// Generate month, year combination for past months and print the respective stats for them.
+fn stats_last_month(balance: &TimeBalance, year: i32, month: Month, history: i32) {
+    let mut months: Vec<Month> = vec![month];
+    let mut years: Vec<i32> = vec![year];
+    (0..history).fold(month, |a, _| {
+        months.push(a.pred());
+        if a.pred().number_from_month() > month.number_from_month() {
+            years.push(year - 1);
+        } else {
+            years.push(year);
+        }
+        a.pred()
+    });
+    years.reverse();
+    months.reverse();
+    log::trace!("Years: {:?}, months: {:?}", years, months);
+
+    for (y, m) in years.iter().zip(months) {
+        monthly_stats(balance, *y, m);
+    }
+}
+
 /// Prints the entries in the `storage` for one `month` grouped by weeks.
 fn monthly_stats(balance: &TimeBalance, year: i32, month: Month) {
     let month_entries: Vec<(&DateTime<Utc>, &DurationDef)> =
         balance.month_range(year, month).collect();
+    log::trace!("Month {:?}", month);
 
     if !month_entries.is_empty() {
         println!("{}:", month.name().green());
