@@ -24,8 +24,10 @@ pub fn stats<P: AsRef<Path>>(storage: P, month: Option<crate::month::Month>) -> 
     } else {
         let m = Month::from_u32(Utc::now().month())
             .ok_or_else(|| format_err!("Failed to parse current month"))?;
-        println!("Here are your stats for the last 2 months:",);
-        stats_last_month(&balance, year, m, 2);
+        let default_cfg = crate::balance::Config::default();
+        let history = balance.config.as_ref().unwrap_or(&default_cfg).month_stats;
+        println!("Here are your stats for the last {} months:", history);
+        stats_last_month(&balance, year, m, history);
     }
 
     println!();
@@ -35,7 +37,7 @@ pub fn stats<P: AsRef<Path>>(storage: P, month: Option<crate::month::Month>) -> 
 }
 
 /// Generate month, year combination for past months and print the respective stats for them.
-fn stats_last_month(balance: &TimeBalance, year: i32, month: Month, history: i32) {
+fn stats_last_month(balance: &TimeBalance, year: i32, month: Month, history: u8) {
     let mut months: Vec<Month> = vec![month];
     let mut years: Vec<i32> = vec![year];
     (0..history).fold(month, |a, _| {

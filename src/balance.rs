@@ -16,11 +16,11 @@ use std::{
     io::{BufReader, Read, Write},
 };
 
+use crate::storage::WorkStorage;
+
 fn nanoseconds(_dur: &Duration) -> i32 {
     0i32
 }
-
-use crate::storage::WorkStorage;
 
 /// Alias for chrono::Duration with serde support.
 #[derive(Serialize, Deserialize)]
@@ -70,6 +70,17 @@ pub(crate) struct DurationDef {
     inner: Duration,
 }
 
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct Config {
+    pub month_stats: u8,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self { month_stats: 2 }
+    }
+}
+
 /// A storage for completed and started work sets as well as started and
 /// completed breaks.
 ///
@@ -81,6 +92,8 @@ pub(crate) struct TimeBalance {
     start: Option<DateTime<Utc>>,
     breaking: Option<DateTime<Utc>>,
     breaks: Vec<DurationDef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub config: Option<Config>,
     #[serde(rename = "account")]
     time_account: BTreeMap<DateTime<Utc>, DurationDef>,
 }
@@ -91,6 +104,7 @@ impl TimeBalance {
             time_account: BTreeMap::new(),
             start: None,
             breaking: None,
+            config: None,
             breaks: Vec::new(),
         }
     }
@@ -334,6 +348,7 @@ impl TryFrom<&WorkStorage> for TimeBalance {
             start,
             breaking,
             breaks,
+            config: None,
             time_account,
         })
     }

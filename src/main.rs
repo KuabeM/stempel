@@ -36,6 +36,8 @@ enum Opt {
     /// Migrate json database from old to new format, creates backup file
     /// `*.bak` overwriting the original.
     Migrate(OptPath),
+    /// Configure internals of stempel.
+    Configure(OptPath),
 }
 
 /// Subcommands for break subcommand.
@@ -105,6 +107,11 @@ fn run() -> Result<(), Error> {
         Opt::Migrate(opt) => {
             debug!("Migrate");
             commands::control::migrate(opt.path.unwrap_or(default_path))?;
+        }
+        Opt::Configure(opt) => {
+            let storage = opt.path.unwrap_or(default_path);
+            debug!("Configure, stored in {:?}", storage);
+            commands::config::configure(storage)?;
         }
     }
 
