@@ -5,5 +5,6 @@
 //! handling periods and a module `stats` for printing statistics about past and
 //! current work periods.
 
+pub mod config;
 pub mod control;
 pub mod stats;
