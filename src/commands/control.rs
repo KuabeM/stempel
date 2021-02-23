@@ -72,7 +72,7 @@ pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(),
     let mut balance = TimeBalance::from_file(&storage, false)?;
     let dur = balance.finish_break(time)?;
     println!(
-        "You had a break for {}:{}h. Way to go!",
+        "You had a break for {}:{:02}h. Way to go!",
         dur.num_hours(),
         dur.num_minutes() % 60
     );
@@ -88,7 +88,7 @@ pub fn start_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()
     let mut balance = TimeBalance::from_file(&storage, false)?;
     let dur = balance.start_break(time)?;
     println!(
-        "Started a break at {}:{}",
+        "Started a break after working {}:{:02}h.",
         dur.num_hours(),
         dur.num_minutes() % 60
     );
