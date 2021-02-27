@@ -31,19 +31,19 @@ pub fn parse_time(src: &str) -> Result<OffsetTime, Error> {
             if captures.len() == 8 {
                 let h = &captures
                     .get(2)
-                    .and_then(|m| Some(m.as_str()))
+                    .map(|m| m.as_str())
                     .unwrap_or("0")
                     .parse::<i64>()
                     .unwrap();
                 let m = &captures
                     .get(4)
-                    .and_then(|m| Some(m.as_str()))
+                    .map(|m| m.as_str())
                     .unwrap_or("0")
                     .parse::<i64>()
                     .unwrap();
                 let s = &captures
                     .get(6)
-                    .and_then(|m| Some(m.as_str()))
+                    .map(|m| m.as_str())
                     .unwrap_or("0")
                     .parse::<i64>()
                     .unwrap();
@@ -54,9 +54,9 @@ pub fn parse_time(src: &str) -> Result<OffsetTime, Error> {
             }
         })
         .map_err(|e| format_err!("Regex: {:?}", e))?;
-        if duration.num_seconds() == 0 {
-            failure::bail!("Failed to deserialize offset '{}'", src);
-        }
+    if duration.num_seconds() == 0 {
+        failure::bail!("Failed to deserialize offset '{}'", src);
+    }
 
     let date_time: DateTime<Utc> = Utc::now()
         .checked_add_signed(duration)
@@ -120,5 +120,4 @@ mod tests {
         assert!(parse_time("10m").is_err());
         assert!(parse_time("1-").is_err());
     }
-
 }
