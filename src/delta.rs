@@ -22,27 +22,41 @@ impl std::fmt::Display for OffsetTime {
 }
 
 pub fn parse_time(src: &str) -> Result<OffsetTime, Error> {
-    let regex: Regex = Regex::new(r"([0-9]+)([h|m|s])([\+|-])").unwrap();
+    let regex: Regex = Regex::new(r"(([0-9]+)[h])?(([0-9]+)[m])?(([0-9]+)[s])?([\+|-])").unwrap();
 
     let duration = regex
         .captures(src)
         .ok_or_else(|| Err::<Captures, Error>(format_err!("Failed to parse {} to DateTime", src)))
         .map(|captures| {
-            if captures.len() == 4 {
-                let number = &captures[1].parse::<u64>().unwrap();
-                let unit = &captures[2];
-                let sign = if &captures[3] == "+" { 1 } else { -1 };
-                match unit {
-                    "h" => Duration::hours(*number as i64 * sign),
-                    "m" => Duration::minutes(*number as i64 * sign),
-                    "s" => Duration::seconds(*number as i64 * sign),
-                    _ => unreachable!("Not covered by regex"),
-                }
+            if captures.len() == 8 {
+                let h = &captures
+                    .get(2)
+                    .and_then(|m| Some(m.as_str()))
+                    .unwrap_or("0")
+                    .parse::<i64>()
+                    .unwrap();
+                let m = &captures
+                    .get(4)
+                    .and_then(|m| Some(m.as_str()))
+                    .unwrap_or("0")
+                    .parse::<i64>()
+                    .unwrap();
+                let s = &captures
+                    .get(6)
+                    .and_then(|m| Some(m.as_str()))
+                    .unwrap_or("0")
+                    .parse::<i64>()
+                    .unwrap();
+                let sign = if &captures[7] == "+" { 1 } else { -1 };
+                Duration::seconds((h * 3600 + m * 60 + s) * sign)
             } else {
                 Duration::seconds(0)
             }
         })
         .map_err(|e| format_err!("Regex: {:?}", e))?;
+        if duration.num_seconds() == 0 {
+            failure::bail!("Failed to deserialize offset '{}'", src);
+        }
 
     let date_time: DateTime<Utc> = Utc::now()
         .checked_add_signed(duration)
@@ -71,4 +85,40 @@ mod tests {
         assert!(expected < Duration::seconds(-9 * 60 - 59));
         assert!(expected > Duration::seconds(-10 * 60 - 1));
     }
+
+    #[test]
+    fn deserialize_full_fmt() {
+        let input = "10h3m2s+";
+        let time = dbg!(parse_time(input).expect("Can parse"));
+        let expected = dbg!(time.date_time.signed_duration_since(Utc::now()));
+        assert!(expected < dbg!(Duration::seconds(10 * 60 * 60 + 3 * 60 + 2)));
+        assert!(expected > dbg!(Duration::seconds(10 * 60 * 60 + 3 * 60 + 1)));
+    }
+
+    #[test]
+    fn deserialize_hoursseconds() {
+        let input = "2h37s+";
+        let time = dbg!(parse_time(input).expect("Can parse"));
+        let expected = dbg!(time.date_time.signed_duration_since(Utc::now()));
+        assert!(expected < dbg!(Duration::seconds(2 * 60 * 60 + 37)));
+        assert!(expected > dbg!(Duration::seconds(2 * 60 * 60 + 35)));
+    }
+
+    #[test]
+    fn deserialize_minutesseconds() {
+        let input = "2m80s+";
+        let time = dbg!(parse_time(input).expect("Can parse"));
+        let expected = dbg!(time.date_time.signed_duration_since(Utc::now()));
+        assert!(expected < dbg!(Duration::seconds(3 * 60 + 20)));
+        assert!(expected > dbg!(Duration::seconds(3 * 60 + 18)));
+    }
+
+    #[test]
+    fn deserialize_bad_format() {
+        assert!(parse_time("10ms-").is_err());
+        assert!(parse_time("10k+").is_err());
+        assert!(parse_time("10m").is_err());
+        assert!(parse_time("1-").is_err());
+    }
+
 }
