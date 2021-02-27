@@ -37,6 +37,9 @@ Available subcommands are:
   - `stats` prints current statistics.
   - `stop`: checks if a `start` entry is in the storage `file` and calculates
     the working time, aborts if no `start` entry is found,
+  - `configure`: set some defaults for stempel and save them alongside the
+    database file. Currently available:
+    * number of months printed by the statistic command
 
 ### Options:
 
@@ -64,6 +67,7 @@ invocation of the `start` subcommand.
   - [x] Tracking: cancel started work
   - [x] Specify an offset from current time when starting or stopping
   - [ ] Add more possibilities to offset
+  - [x] Add configuration options
 
 ## License
 
