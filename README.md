@@ -45,11 +45,18 @@ Available subcommands are:
 
 #### `--offset`
 
-This option allows to specify a positive or negative offset to the current time.
-In other words, giving the option `--offset 10m+` means that the command is
-executed with the current time plus 10 minutes, `20s-` stands for current time
-minus 20 seconds. The syntax allows `([0-9]*)(h|m|s)(+|-)` where `h|m|s` refers
-to hours, minutes and seconds, respectively.
+This option allows to specify a positive or negative offset to the current
+time.  In other words, giving the option `--offset 10m+` means that the command
+is executed with the current time plus 10 minutes, `20s-` stands for current
+time minus 20 seconds. The syntax allows `[Xh][Xm][Xs](+-)` where `X` can be
+any number and `h|m|s` refer to hours, minutes and seconds, respectively.
+
+Some examples:
+
+  - `2h30m4s+`: 2 hours, 30 minutes, 4 seconds from now
+  - `1h90s-`: 1 hour 90 seconds before now
+  - `20m30s+`: 20 minutes, 30 seconds from now
+  - `60s-`: one minute before now
 
 #### `--storage`
 
@@ -66,7 +73,7 @@ invocation of the `start` subcommand.
   - [ ] Tracking: allow to specify start and stop time as cli arg
   - [x] Tracking: cancel started work
   - [x] Specify an offset from current time when starting or stopping
-  - [ ] Add more possibilities to offset
+  - [x] Add more possibilities to offset
   - [x] Add configuration options
 
 ## License
