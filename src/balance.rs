@@ -148,6 +148,9 @@ impl TimeBalance {
         let start = self
             .start
             .ok_or_else(|| format_err!("You did not start working"))?;
+        if let Some(b) = self.breaking {
+            bail!("You're on a break since {}, won't stop your current work.", b.time().format("%H:%M"));
+        }
         let breaks = self.accumulate_breaks();
         let duration = time
             .signed_duration_since(start)
