@@ -69,12 +69,10 @@ fn monthly_stats(balance: &TimeBalance, year: i32, month: Month) {
         let mut cur_w = 0;
         for (week, group) in &month_entries.into_iter().group_by(|e| {
             let week_num = e.0.iso_week().week();
-            if week_num == cur_w {
-                cur_w
-            } else {
+            if week_num != cur_w {
                 cur_w = week_num;
-                cur_w
             }
+            cur_w
         }) {
             let dur = group.fold(chrono::Duration::zero(), |dur, (_, d)| {
                 dur.checked_add(&d.into()).unwrap()
