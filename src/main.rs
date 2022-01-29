@@ -70,7 +70,11 @@ fn run() -> Result<(), Error> {
         .format_timestamp(None)
         .init();
 
-    let default_path = PathBuf::from(std::env::var("HOME")? + "/.config/stempel.json");
+        let default_path = if cfg!(windows) {
+            PathBuf::from(std::env::var("HOMEPATH")? + "/.config/stempel.json")
+        } else {
+            PathBuf::from(std::env::var("HOME")? + "/.config/stempel.json")
+        };
 
     match Opt::from_args() {
         Opt::Start(action) => {
