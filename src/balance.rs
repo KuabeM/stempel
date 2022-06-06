@@ -73,11 +73,24 @@ pub(crate) struct DurationDef {
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Config {
     pub month_stats: u8,
+    pub daily_hours: Option<u8>,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Self { month_stats: 2 }
+        Self {
+            month_stats: 2,
+            daily_hours: None,
+        }
+    }
+}
+
+impl Default for &Config {
+    fn default() -> Self {
+        &Config {
+            month_stats: 2,
+            daily_hours: None,
+        }
     }
 }
 
