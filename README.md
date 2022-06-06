@@ -13,6 +13,8 @@ Small utility to store and calculate the time spent at work.
 Example for managing one day:
 
 ```bash
+# First of, configure some settings
+stempel configure
 # start working now
 stempel start
 # start a break five minutes ago
@@ -40,6 +42,7 @@ Available subcommands are:
   - `configure`: set some defaults for stempel and save them alongside the
     database file. Currently available:
     * number of months printed by the statistic command
+    * number of hours to work per day
 
 ### Options:
 

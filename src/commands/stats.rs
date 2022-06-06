@@ -4,7 +4,7 @@
 
 use crate::balance::{BrakeState, DurationDef, TimeBalance};
 
-use chrono::{DateTime, Datelike, Month, Utc};
+use chrono::{DateTime, Datelike, Duration, Month, Utc};
 use colored::*;
 use failure::{format_err, Error};
 use itertools::Itertools;
@@ -89,28 +89,53 @@ fn monthly_stats(balance: &TimeBalance, year: i32, month: Month) {
 
 /// Print current state of started work, running and finished breaks.
 fn show_state(balance: &TimeBalance) {
-    if let Some((dur, start)) = balance.start_state() {
+    let dur = if let Some((dur, start)) = balance.start_state() {
         println!(
             "Started at {}, worked {:02}:{:02}h since then.",
             start.with_timezone(&chrono::Local).format("%H:%M"),
             dur.num_hours(),
             dur.num_minutes() % 60
         );
-    }
-    match balance.break_state() {
+        dur
+    } else {
+        Duration::zero()
+    };
+    let pause = match balance.break_state() {
         BrakeState::Started(d, s) => {
             println!(
                 "You're on a break since {}, total break duration today is {:02}:{:02}h.",
                 s.with_timezone(&chrono::Local).format("%H:%M"),
                 d.num_hours(),
                 d.num_minutes() % 60
-            )
+            );
+            d
         }
-        BrakeState::Finished(d) => println!(
-            "Your breaks lasted {:02}:{:02}h.",
-            d.num_hours(),
-            d.num_minutes() % 60
-        ),
-        BrakeState::NotActive => {}
+        BrakeState::Finished(d) => {
+            println!(
+                "Your breaks lasted {:02}:{:02}h.",
+                d.num_hours(),
+                d.num_minutes() % 60
+            );
+            d
+        }
+        BrakeState::NotActive => Duration::seconds(0),
+    };
+
+    if let Some(daily) = balance.config.as_ref().unwrap_or_default().daily_hours {
+        let daily = Duration::hours(daily as i64);
+        let remaining = daily - dur + pause;
+        if remaining < Duration::zero() {
+            println!(
+                "You're done for today. You have {:02}:{:02}h overhours.",
+                (-remaining).num_hours(),
+                (-remaining).num_minutes() % 60
+            );
+        } else {
+            println!(
+                "You still need to work {:02}:{:02}h.",
+                remaining.num_hours(),
+                remaining.num_minutes() % 60,
+            );
+        }
     }
 }
