@@ -98,7 +98,7 @@ fn from_is_ok() {
 #[should_panic(expected = "failed to convert string to month")]
 fn from_panics() {
     let bad_month = "some".to_string();
-    Month::from(bad_month);
+    let _ = Month::from(bad_month);
 }
 
 #[test]
