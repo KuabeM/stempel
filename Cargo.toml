@@ -20,8 +20,8 @@ maintenance = { status = "actively-developed" }
 chrono = { version = "0.4", features = ["serde"] }
 colored = "1.9"
 env_logger = "0.7"
-failure = "0.1"
 itertools = "0.10"
+anyhow = "1"
 log = "0.4"
 num_enum = "0.4.3"
 num-traits = "0.2"

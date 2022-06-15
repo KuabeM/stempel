@@ -2,7 +2,7 @@
 //!
 //! Handler for the `config` subcommand.
 
-use failure::Error;
+use anyhow::Result;
 use std::path::Path;
 
 use crate::balance::{Config, TimeBalance};
@@ -17,7 +17,7 @@ impl std::fmt::Display for Config {
     }
 }
 
-pub fn configure<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
+pub fn configure<P: AsRef<Path>>(storage: P) -> Result<()> {
     let mut balance = TimeBalance::from_file(&storage, true)?;
     let cfg = if let Some(cfg) = balance.config {
         println!("Current configuration:");

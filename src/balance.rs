@@ -5,7 +5,7 @@
 use chrono::prelude::*;
 use chrono::Duration;
 
-use failure::{bail, format_err, Error};
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
 use std::convert::TryFrom;
@@ -129,14 +129,14 @@ impl TimeBalance {
     }
 
     /// Remove a started break or a started work if no break exists.
-    pub(crate) fn cancel(&mut self) -> Result<(), Error> {
+    pub(crate) fn cancel(&mut self) -> Result<()> {
         match self.breaking {
             None => self
                 .start
                 .map(|_| {
                     self.start = None;
                 })
-                .ok_or_else(|| format_err!("Nothing to cancel")),
+                .ok_or_else(|| anyhow!("Nothing to cancel")),
             Some(_) => {
                 self.breaking = None;
                 Ok(())
@@ -157,12 +157,12 @@ impl TimeBalance {
 
     /// Stop the started time, calculate the duration by resolving all breaks
     /// and the time since start.
-    pub(crate) fn stop(&mut self, time: DateTime<Utc>) -> Result<Duration, Error> {
+    pub(crate) fn stop(&mut self, time: DateTime<Utc>) -> Result<Duration> {
         let start = self
             .start
-            .ok_or_else(|| format_err!("You did not start working"))?;
+            .ok_or_else(|| anyhow!("You did not start working"))?;
         if let Some(b) = self.breaking {
-            bail!(
+            anyhow::bail!(
                 "You're on a break since {}, won't stop your current work.",
                 b.time().format("%H:%M")
             );
@@ -171,7 +171,7 @@ impl TimeBalance {
         let duration = time
             .signed_duration_since(start)
             .checked_sub(&breaks)
-            .ok_or_else(|| format_err!("Your break was longer than your work"))?;
+            .ok_or_else(|| anyhow!("Your break was longer than your work"))?;
         self.insert(time, duration.into());
         self.reset();
         Ok(duration)
@@ -185,23 +185,23 @@ impl TimeBalance {
     }
 
     /// Add `time` as start of break.
-    pub(crate) fn start_break(&mut self, time: DateTime<Utc>) -> Result<Duration, Error> {
+    pub(crate) fn start_break(&mut self, time: DateTime<Utc>) -> Result<Duration> {
         self.start
             .map(|s| {
                 // TODO: check if there is a break already
                 self.breaking = Some(time);
                 time.signed_duration_since(s)
             })
-            .ok_or_else(|| format_err!("You're not tracking your work so you can't take a break"))
+            .ok_or_else(|| anyhow!("You're not tracking your work so you can't take a break"))
     }
 
     /// Calculate duration of current break.
-    pub(crate) fn finish_break(&mut self, time: DateTime<Utc>) -> Result<Duration, Error> {
+    pub(crate) fn finish_break(&mut self, time: DateTime<Utc>) -> Result<Duration> {
         self.start
-            .ok_or_else(|| format_err!("You can't break if you haven't started."))?;
+            .ok_or_else(|| anyhow!("You can't break if you haven't started."))?;
         let break_start = self
             .breaking
-            .ok_or_else(|| format_err!("You're not on a break right now."))?;
+            .ok_or_else(|| anyhow!("You're not on a break right now."))?;
 
         let dur = time.signed_duration_since(break_start);
         self.breaks.push(dur.into());
@@ -251,34 +251,35 @@ impl TimeBalance {
     }
 
     /// Deserialize json buffer.
-    fn from_reader<R: Read>(reader: &mut R) -> Result<Self, Error> {
+    fn from_reader<R: Read>(reader: &mut R) -> Result<Self> {
         serde_json::from_reader(reader)
-            .map_err(|e| format_err!("Failed to deserialize json: {}. Try 'stempel migrate' to migrate to new json format.", e))
+            .map_err(|e| anyhow!("Failed to deserialize json: {}. Try 'stempel migrate' to migrate to new json format.", e))
     }
 
     /// Serialize time balance to json.
-    fn write<W>(&self, writer: &mut W) -> Result<(), Error>
+    fn write<W>(&self, writer: &mut W) -> Result<()>
     where
         W: Write,
     {
         serde_json::to_writer(writer, &self)
-            .map_err(|e| format_err!("Failed to serialize to json: {}", e))
+            .map_err(|e| anyhow!("Failed to serialize to json: {}", e))
     }
 
     /// Read from json file.
-    pub fn from_file<P: AsRef<Path>>(path: P, create: bool) -> Result<Self, Error> {
+    pub fn from_file<P: AsRef<Path>>(path: P, create: bool) -> Result<Self> {
         match File::open(&path) {
             Ok(f) => {
                 let mut reader = BufReader::new(f);
-                Self::from_reader(&mut reader)
+                let s = Self::from_reader(&mut reader)?;
+                Ok(s)
             }
             Err(_) if create => Ok(TimeBalance::new()),
-            Err(e) => bail!("Failed to open database: {}", e),
+            Err(e) => anyhow::bail!("Failed to open database: {}", e),
         }
     }
 
     /// Write time balance to json file.
-    pub fn to_file<P: AsRef<Path>>(&self, path: P) -> Result<(), Error> {
+    pub fn to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
         match OpenOptions::new().write(true).truncate(true).open(&path) {
             Ok(mut f) => self.write(&mut f),
             Err(_) => {
@@ -287,7 +288,7 @@ impl TimeBalance {
                     path.as_ref().to_str().unwrap()
                 );
                 let mut f = File::create(&path)
-                    .map_err(|e| format_err!("There is no database and creating failed: {}", e))?;
+                    .map_err(|e| anyhow!("There is no database and creating failed: {}", e))?;
                 self.write(&mut f)
             }
         }
@@ -346,7 +347,7 @@ impl std::fmt::Display for TimeBalance {
 }
 
 impl TryFrom<&WorkStorage> for TimeBalance {
-    type Error = Error;
+    type Error = anyhow::Error;
     fn try_from(other: &WorkStorage) -> Result<Self, Self::Error> {
         let start = other.try_start().map(|s| s.start).ok();
         let breaking = other.try_break().map(|b| b.start).ok();

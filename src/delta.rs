@@ -1,5 +1,5 @@
+use anyhow::{anyhow, bail, Error};
 use chrono::{DateTime, Duration, Utc};
-use failure::{format_err, Error};
 use regex::{Captures, Regex};
 
 #[derive(Debug, Eq, PartialEq)]
@@ -26,7 +26,7 @@ pub fn parse_time(src: &str) -> Result<OffsetTime, Error> {
 
     let duration = regex
         .captures(src)
-        .ok_or_else(|| Err::<Captures, Error>(format_err!("Failed to parse {} to DateTime", src)))
+        .ok_or_else(|| Err::<Captures, Error>(anyhow!("Failed to parse {} to DateTime", src)))
         .map(|captures| {
             if captures.len() == 8 {
                 let h = &captures
@@ -53,14 +53,14 @@ pub fn parse_time(src: &str) -> Result<OffsetTime, Error> {
                 Duration::seconds(0)
             }
         })
-        .map_err(|e| format_err!("Regex: {:?}", e))?;
+        .map_err(|e| anyhow!("Regex: {:?}", e))?;
     if duration.num_seconds() == 0 {
-        failure::bail!("Failed to deserialize offset '{}'", src);
+        bail!("Failed to deserialize offset '{}'", src);
     }
 
     let date_time: DateTime<Utc> = Utc::now()
         .checked_add_signed(duration)
-        .ok_or_else(|| format_err!("Failed to construct DateTime"))?;
+        .ok_or_else(|| anyhow!("Failed to construct DateTime"))?;
     Ok(OffsetTime { date_time })
 }
 
