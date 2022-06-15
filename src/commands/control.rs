@@ -2,9 +2,9 @@
 
 use crate::balance::TimeBalance;
 
+use anyhow::{anyhow, Result};
 use chrono::{DateTime, Local, Utc};
 use colored::*;
-use failure::{format_err, Error};
 use std::{convert::TryFrom, path::Path};
 
 /// Handles the start of a working period and breaks called by subcommand
@@ -13,10 +13,10 @@ use std::{convert::TryFrom, path::Path};
 /// `storage` points to the json storage file. Creates the database file if it
 /// does not exist. Returns an error if there already exists a start entry in
 /// the storage.
-pub fn start<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
+pub fn start<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()> {
     let mut balance = TimeBalance::from_file(&storage, true)?;
     balance.start(time).map_err(|e| {
-        format_err!(
+        anyhow!(
             "You already started at {}",
             e.with_timezone(&Local).time().format("%H:%M")
         )
@@ -38,9 +38,9 @@ pub fn start<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Erro
 ///
 /// `storage` points to the json storage file. Throws an error if there is no
 /// such storage yet.
-pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
+pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()> {
     let mut balance = TimeBalance::from_file(&storage, false)
-        .map_err(|e| format_err!("There is no database: {}", e))?;
+        .map_err(|e| anyhow!("There is no database: {}", e))?;
     let duration = balance.stop(time)?;
     println!(
         "You worked {}:{:02}h today. Enjoy your evening \u{1F389}",
@@ -56,7 +56,7 @@ pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error
 /// of the `cancel` subcommand.
 ///
 /// `storage` is the path pointing to the database file.
-pub fn cancel<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
+pub fn cancel<P: AsRef<Path>>(storage: P) -> Result<()> {
     let mut balance = TimeBalance::from_file(&storage, false)?;
     balance.cancel()?;
     balance.to_file(&storage)?;
@@ -68,7 +68,7 @@ pub fn cancel<P: AsRef<Path>>(storage: P) -> Result<(), Error> {
 ///
 /// Handler of `break stop` subcommand. `storage` is the json storage file.
 /// Throws an error if there is no stared break in the database.
-pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
+pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()> {
     let mut balance = TimeBalance::from_file(&storage, false)?;
     let dur = balance.finish_break(time)?;
     println!(
@@ -84,7 +84,7 @@ pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(),
 ///
 /// Handler of the `break start` subcommand. `storage` is the database file.
 /// Throws an error if there is no start entry in the database.
-pub fn start_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<(), Error> {
+pub fn start_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()> {
     let mut balance = TimeBalance::from_file(&storage, false)?;
     let dur = balance.start_break(time)?;
     println!(
@@ -96,7 +96,7 @@ pub fn start_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()
     Ok(())
 }
 
-pub fn migrate<P: AsRef<Path>>(path: P) -> Result<(), Error> {
+pub fn migrate<P: AsRef<Path>>(path: P) -> Result<()> {
     let storage = crate::storage::WorkStorage::from_file(&path)?;
     let balance = TimeBalance::try_from(&storage)?;
     balance.to_file(&path)?;

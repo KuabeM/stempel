@@ -1,5 +1,5 @@
+use anyhow::Result;
 use env_logger::Env;
-use failure::Error;
 use log::debug;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -65,7 +65,7 @@ struct OptPath {
     path: Option<PathBuf>,
 }
 
-fn run() -> Result<(), Error> {
+fn run() -> Result<()> {
     env_logger::from_env(Env::default().default_filter_or("info"))
         .format_timestamp(None)
         .init();

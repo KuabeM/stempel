@@ -3,8 +3,8 @@
 //!
 //! Only kept around to support migrating from the old storage format.
 
+use anyhow::{anyhow, bail, Error};
 use chrono::{DateTime, Local, Utc};
-use failure::{bail, format_err, Error};
 use serde::{Deserialize, Serialize};
 
 use std::convert::TryFrom;
@@ -97,7 +97,7 @@ impl WorkStorage {
             Ok(f) => {
                 let reader = BufReader::new(f);
                 serde_json::from_reader(reader)
-                    .map_err(|e| format_err!("Failed to deserialize json: {}", e))
+                    .map_err(|e| anyhow!("Failed to deserialize json: {}", e))
             }
             Err(_) => {
                 println!("Enter your name: ");
@@ -109,7 +109,7 @@ impl WorkStorage {
     }
 
     fn to_json(&self) -> Result<String, Error> {
-        serde_json::to_string(&self).map_err(|e| format_err!("Failed to serialize to json: {}", e))
+        serde_json::to_string(&self).map_err(|e| anyhow!("Failed to serialize to json: {}", e))
     }
 
     pub fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), Error> {
@@ -148,7 +148,7 @@ impl WorkStorage {
             .cloned();
         match breaked {
             Some(s) => Ok(s),
-            None => Err(format_err!("You deserve that break")),
+            None => Err(anyhow!("You deserve that break")),
         }
     }
 }
