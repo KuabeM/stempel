@@ -104,7 +104,7 @@ impl Default for &Config {
 pub(crate) struct TimeBalance {
     start: Option<DateTime<Utc>>,
     breaking: Option<DateTime<Utc>>,
-    breaks: Vec<DurationDef>,
+    breaks: Vec<(DateTime<Utc>, DurationDef)>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config: Option<Config>,
     #[serde(rename = "account")]
@@ -181,7 +181,12 @@ impl TimeBalance {
     pub(crate) fn accumulate_breaks(&self) -> Duration {
         self.breaks
             .iter()
-            .fold(Duration::seconds(0), |acc, b| acc + b.clone().into())
+            .fold(Duration::seconds(0), |acc, b| acc + b.clone().1.into())
+    }
+
+    /// Get all breaks.
+    pub(crate) fn get_breaks(&self) -> Vec<(DateTime<Utc>, Duration)> {
+        self.breaks.iter().map(|(s, d)| (*s, d.into())).collect()
     }
 
     /// Add `time` as start of break.
@@ -204,7 +209,7 @@ impl TimeBalance {
             .ok_or_else(|| anyhow!("You're not on a break right now."))?;
 
         let dur = time.signed_duration_since(break_start);
-        self.breaks.push(dur.into());
+        self.breaks.push((break_start, dur.into()));
         self.breaking = None;
 
         Ok(dur)
@@ -309,15 +314,16 @@ impl TimeBalance {
         if self.start.is_none() {
             return BrakeState::NotActive;
         }
-        let dur = self.accumulate_breaks();
         if let Some(breaking) = self.breaking {
+            let dur = self.accumulate_breaks();
             let sum = Utc::now()
                 .signed_duration_since(breaking)
                 .checked_add(&dur)
                 .unwrap_or(dur);
             BrakeState::Started(sum, breaking)
         } else {
-            BrakeState::Finished(dur)
+            let breaks = self.get_breaks();
+            BrakeState::Finished(breaks)
         }
     }
 }
@@ -325,7 +331,7 @@ impl TimeBalance {
 /// Helper Enum for returning useful states.
 pub(crate) enum BrakeState {
     Started(Duration, DateTime<Utc>),
-    Finished(Duration),
+    Finished(Vec<(DateTime<Utc>, Duration)>),
     NotActive,
 }
 
