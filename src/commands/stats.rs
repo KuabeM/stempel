@@ -5,7 +5,7 @@
 use crate::balance::{BrakeState, DurationDef, TimeBalance};
 
 use anyhow::{anyhow, Result};
-use chrono::{DateTime, Datelike, Duration, Month, Utc};
+use chrono::{DateTime, Datelike, Duration, Month, Utc, Local};
 use colored::*;
 use itertools::Itertools;
 use num_traits::FromPrimitive;
@@ -110,13 +110,26 @@ fn show_state(balance: &TimeBalance) {
             );
             d
         }
-        BrakeState::Finished(d) => {
+        BrakeState::Finished(breaks) => {
+            let break_str = breaks.iter().fold(String::new(), |acc, (s, d)| {
+                format!(
+                    "{}{} for {:02}:{:02}h, ",
+                    acc,
+                    s.with_timezone(&Local).time().format("%H:%M"),
+                    d.num_hours(),
+                    d.num_minutes() % 60
+                )
+            });
+            let break_dur = breaks
+                .iter()
+                .fold(Duration::seconds(0), |acc, (_, d)| acc + *d);
             println!(
-                "Your breaks lasted {:02}:{:02}h.",
-                d.num_hours(),
-                d.num_minutes() % 60
+                "You had breaks at {}took {:02}:{:02}h in total.",
+                break_str,
+                break_dur.num_hours(),
+                break_dur.num_minutes() % 60
             );
-            d
+            break_dur
         }
         BrakeState::NotActive => Duration::seconds(0),
     };
