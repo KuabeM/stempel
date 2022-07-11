@@ -250,6 +250,17 @@ impl TimeBalance {
         self.range(lower, upper)
     }
 
+    /// Extract all entries from one day.
+    pub fn daily_range<T: chrono::offset::TimeZone>(
+        &self,
+        day: Date<T>,
+    ) -> impl Iterator<Item = (&DateTime<Utc>, &DurationDef)> {
+        log::trace!("Entries for {:?}", day);
+        let start = day.and_hms(0, 0, 0).with_timezone(&Utc);
+        let end = day.and_hms(23, 59, 59).with_timezone(&Utc);
+        self.range(start, end)
+    }
+
     /// Insert a start time and the corresponding duration into map.
     pub(crate) fn insert(&mut self, dt: DateTime<Utc>, dur: DurationDef) {
         self.time_account.insert(dt, dur);
@@ -310,29 +321,32 @@ impl TimeBalance {
     }
 
     /// Get start and duration of break if any
-    pub fn break_state(&self) -> BrakeState {
+    pub fn break_state(&self) -> BreakeState {
+        let break_sum = self.accumulate_breaks();
         if self.start.is_none() {
-            return BrakeState::NotActive;
+            return BreakeState {
+                current: None,
+                breaks: self.get_breaks(),
+                sum: break_sum,
+            };
         }
-        if let Some(breaking) = self.breaking {
-            let dur = self.accumulate_breaks();
-            let sum = Utc::now()
-                .signed_duration_since(breaking)
-                .checked_add(&dur)
-                .unwrap_or(dur);
-            BrakeState::Started(sum, breaking)
-        } else {
-            let breaks = self.get_breaks();
-            BrakeState::Finished(breaks)
+        let current = self.breaking;
+        let sum = Utc::now()
+            .signed_duration_since(current.unwrap_or_else(Utc::now))
+            .checked_add(&break_sum)
+            .unwrap_or(break_sum);
+        BreakeState {
+            current,
+            breaks: self.get_breaks(),
+            sum,
         }
     }
 }
 
-/// Helper Enum for returning useful states.
-pub(crate) enum BrakeState {
-    Started(Duration, DateTime<Utc>),
-    Finished(Vec<(DateTime<Utc>, Duration)>),
-    NotActive,
+pub(crate) struct BreakeState {
+    pub current: Option<DateTime<Utc>>,
+    pub breaks: Vec<(DateTime<Utc>, Duration)>,
+    pub sum: Duration,
 }
 
 impl std::fmt::Display for TimeBalance {

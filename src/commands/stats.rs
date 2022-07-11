@@ -2,10 +2,10 @@
 //!
 //! The main entry point is `stats` which then further decides what to do.
 
-use crate::balance::{BrakeState, DurationDef, TimeBalance};
+use crate::balance::{DurationDef, TimeBalance};
 
 use anyhow::{anyhow, Result};
-use chrono::{DateTime, Datelike, Duration, Month, Utc, Local};
+use chrono::{DateTime, Datelike, Duration, Local, Month, Utc};
 use colored::*;
 use itertools::Itertools;
 use num_traits::FromPrimitive;
@@ -100,50 +100,62 @@ fn show_state(balance: &TimeBalance) {
     } else {
         Duration::zero()
     };
-    let pause = match balance.break_state() {
-        BrakeState::Started(d, s) => {
-            println!(
-                "You're on a break since {}, total break duration today is {:02}:{:02}h.",
-                s.with_timezone(&chrono::Local).format("%H:%M"),
+    let break_state = balance.break_state();
+    let break_str = break_state
+        .breaks
+        .iter()
+        .fold(String::new(), |acc, (s, d)| {
+            format!(
+                "{}{} for {:02}:{:02}h, ",
+                acc,
+                s.with_timezone(&Local).time().format("%H:%M"),
                 d.num_hours(),
                 d.num_minutes() % 60
-            );
-            d
-        }
-        BrakeState::Finished(breaks) => {
-            let break_str = breaks.iter().fold(String::new(), |acc, (s, d)| {
-                format!(
-                    "{}{} for {:02}:{:02}h, ",
-                    acc,
-                    s.with_timezone(&Local).time().format("%H:%M"),
-                    d.num_hours(),
-                    d.num_minutes() % 60
-                )
-            });
-            let break_dur = breaks
-                .iter()
-                .fold(Duration::seconds(0), |acc, (_, d)| acc + *d);
-            println!(
-                "You had breaks at {}took {:02}:{:02}h in total.",
-                break_str,
-                break_dur.num_hours(),
-                break_dur.num_minutes() % 60
-            );
-            break_dur
-        }
-        BrakeState::NotActive => Duration::seconds(0),
+            )
+        });
+    let pause = if let Some(start) = break_state.current {
+        println!(
+            "You're on a break since {}, with breaks at {}took {:02}:{:02}h.",
+            start.with_timezone(&chrono::Local).format("%H:%M"),
+            break_str,
+            break_state.sum.num_hours(),
+            break_state.sum.num_minutes() % 60
+        );
+        break_state.sum
+    } else if break_state.sum > Duration::seconds(0) {
+        println!(
+            "You had breaks at {}took {:02}:{:02}h in total.",
+            break_str,
+            break_state.sum.num_hours(),
+            break_state.sum.num_minutes() % 60
+        );
+        break_state.sum
+    } else {
+        break_state.sum
     };
 
     if let Some(daily) = balance.config.as_ref().unwrap_or_default().daily_hours {
         let daily = Duration::hours(daily as i64);
         let remaining = daily - dur + pause;
+        let daily_range =
+            balance
+                .daily_range(Local::today())
+                .fold(Duration::seconds(0), |acc, (_, dur)| {
+                    log::trace!("{:?}", dur);
+                    acc + dur.clone().into()
+                });
+        log::trace!(
+            "Prevously worked hours {:?}, remaining: {:?}",
+            daily_range,
+            remaining
+        );
         if remaining < Duration::zero() {
             println!(
                 "You're done for today. You have {:02}:{:02}h overhours.",
                 (-remaining).num_hours(),
                 (-remaining).num_minutes() % 60
             );
-        } else {
+        } else if !daily_range.is_zero() {
             println!(
                 "You still need to work {:02}:{:02}h.",
                 remaining.num_hours(),
