@@ -38,6 +38,7 @@ pub fn configure<P: AsRef<Path>>(storage: P) -> Result<()> {
 
     let daily_hours = cfg.daily_hours.unwrap_or_default();
     println!("    Daily working hours ({}): ", daily_hours);
+    input.clear();
     std::io::stdin().read_line(&mut input)?;
     let daily_hours = input.trim().parse::<u8>().unwrap_or(daily_hours);
     let cfg = Config {
@@ -45,6 +46,8 @@ pub fn configure<P: AsRef<Path>>(storage: P) -> Result<()> {
         daily_hours: Some(daily_hours),
         // ..cfg
     };
+    log::trace!("Months to display {}", cfg.month_stats);
+    log::trace!("Daily working hours {:?}", cfg.daily_hours);
 
     balance.config = Some(cfg);
 
