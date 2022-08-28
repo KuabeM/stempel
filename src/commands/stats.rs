@@ -124,7 +124,7 @@ fn show_state(balance: &TimeBalance) {
         break_state.sum
     } else if break_state.sum > Duration::seconds(0) {
         println!(
-            "You had breaks at {}took {:02}:{:02}h in total.",
+            "You had breaks at {}with a total of {:02}:{:02}h.",
             break_str,
             break_state.sum.num_hours(),
             break_state.sum.num_minutes() % 60
@@ -141,7 +141,7 @@ fn show_state(balance: &TimeBalance) {
             balance
                 .daily_range(Local::today())
                 .fold(Duration::seconds(0), |acc, (_, dur)| {
-                    log::trace!("{:?}", dur);
+                    log::trace!("dur: {:?}", dur);
                     acc + dur.clone().into()
                 });
         log::trace!(
@@ -155,7 +155,7 @@ fn show_state(balance: &TimeBalance) {
                 (-remaining).num_hours(),
                 (-remaining).num_minutes() % 60
             );
-        } else if !daily_range.is_zero() {
+        } else if !(remaining - daily).is_zero() {
             println!(
                 "You still need to work {:02}:{:02}h.",
                 remaining.num_hours(),
