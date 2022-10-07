@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Error};
+use crate::errors::{Result, TimeErr};
 use chrono::{DateTime, Duration, Utc};
 use regex::{Captures, Regex};
 
@@ -21,12 +21,17 @@ impl std::fmt::Display for OffsetTime {
     }
 }
 
-pub fn parse_time(src: &str) -> Result<OffsetTime, Error> {
+pub fn parse_time(src: &str) -> Result<OffsetTime> {
     let regex: Regex = Regex::new(r"(([0-9]+)[h])?(([0-9]+)[m])?(([0-9]+)[s])?([\+|-])").unwrap();
 
     let duration = regex
         .captures(src)
-        .ok_or_else(|| Err::<Captures, Error>(anyhow!("Failed to parse {} to DateTime", src)))
+        .ok_or_else(|| {
+            Err::<Captures, TimeErr>(TimeErr::Parse(format!(
+                "Failed to parse {} to DateTime",
+                src
+            )))
+        })
         .map(|captures| {
             if captures.len() == 8 {
                 let h = &captures
@@ -53,14 +58,17 @@ pub fn parse_time(src: &str) -> Result<OffsetTime, Error> {
                 Duration::seconds(0)
             }
         })
-        .map_err(|e| anyhow!("Regex: {:?}", e))?;
+        .map_err(|e| TimeErr::Parse(format!("Regex: {:?}", e)))?;
     if duration.num_seconds() == 0 {
-        bail!("Failed to deserialize offset '{}'", src);
+        return Err(TimeErr::Parse(format!(
+            "Failed to deserialize offset '{}'",
+            src
+        )));
     }
 
     let date_time: DateTime<Utc> = Utc::now()
         .checked_add_signed(duration)
-        .ok_or_else(|| anyhow!("Failed to construct DateTime"))?;
+        .ok_or_else(|| TimeErr::Parse("Failed to construct DateTime".into()))?;
     Ok(OffsetTime { date_time })
 }
 

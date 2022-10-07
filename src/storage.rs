@@ -3,7 +3,7 @@
 //!
 //! Only kept around to support migrating from the old storage format.
 
-use anyhow::{anyhow, bail, Error};
+use crate::errors::{Result, TimeErr};
 use chrono::{DateTime, Local, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -26,14 +26,17 @@ pub enum WorkType {
 }
 
 impl TryFrom<&str> for WorkType {
-    type Error = Error;
+    type Error = TimeErr;
 
     fn try_from(input: &str) -> Result<Self, Self::Error> {
         match input.to_lowercase().as_str() {
             "work" => Ok(WorkType::Work),
             "start" => Ok(WorkType::Start),
             "break" => Ok(WorkType::Break),
-            _ => bail!("Failed to parse {} into WorkType", input),
+            _ => Err(TimeErr::Parse(format!(
+                "Failed to parse {} into WorkType",
+                input
+            ))),
         }
     }
 }
@@ -92,12 +95,11 @@ pub struct WorkStorage {
 }
 
 impl WorkStorage {
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         match File::open(path) {
             Ok(f) => {
                 let reader = BufReader::new(f);
-                serde_json::from_reader(reader)
-                    .map_err(|e| anyhow!("Failed to deserialize json: {}", e))
+                serde_json::from_reader(reader).map_err(|e| e.into())
             }
             Err(_) => {
                 println!("Enter your name: ");
@@ -108,11 +110,11 @@ impl WorkStorage {
         }
     }
 
-    fn to_json(&self) -> Result<String, Error> {
-        serde_json::to_string(&self).map_err(|e| anyhow!("Failed to serialize to json: {}", e))
+    fn to_json(&self) -> Result<String> {
+        serde_json::to_string(&self).map_err(|e| e.into())
     }
 
-    pub fn write<P: AsRef<Path>>(&self, path: P) -> Result<(), Error> {
+    pub fn write<P: AsRef<Path>>(&self, path: P) -> Result<()> {
         std::fs::write(path, self.to_json()?)?;
         Ok(())
     }
@@ -124,7 +126,7 @@ impl WorkStorage {
         }
     }
 
-    pub fn try_start(&self) -> Result<WorkSet, Error> {
+    pub fn try_start(&self) -> Result<WorkSet> {
         let start = self
             .work_sets
             .iter()
@@ -132,14 +134,14 @@ impl WorkStorage {
             .cloned();
         match start {
             Some(s) => Ok(s),
-            None => bail!(
+            None => Err(TimeErr::CmdFail(format!(
                 "You want to stop but you never started, strange work ethics, {}",
                 self.name
-            ),
+            ))),
         }
     }
 
-    pub fn try_break(&self) -> Result<WorkSet, Error> {
+    pub fn try_break(&self) -> Result<WorkSet> {
         let breaked = self
             .work_sets
             .iter()
@@ -148,7 +150,7 @@ impl WorkStorage {
             .cloned();
         match breaked {
             Some(s) => Ok(s),
-            None => Err(anyhow!("You deserve that break")),
+            None => Err(TimeErr::CmdFail("You deserve that break".into())),
         }
     }
 }

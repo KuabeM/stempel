@@ -4,14 +4,9 @@ use log::debug;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-mod balance;
-mod commands;
-mod delta;
-mod month;
-mod storage;
-
-use delta::{parse_time, OffsetTime};
-use month::Month;
+use stempel::commands;
+use stempel::delta::{parse_time, OffsetTime};
+use stempel::month::Month;
 
 #[derive(StructOpt, Debug)]
 #[structopt(about = "Track the time spent with your fun colleagues")]

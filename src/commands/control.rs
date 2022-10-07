@@ -2,7 +2,7 @@
 
 use crate::balance::TimeBalance;
 
-use anyhow::{anyhow, Result};
+use crate::errors::{Result, TimeErr};
 use chrono::{DateTime, Local, Utc};
 use colored::*;
 use std::{convert::TryFrom, path::Path};
@@ -16,10 +16,10 @@ use std::{convert::TryFrom, path::Path};
 pub fn start<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()> {
     let mut balance = TimeBalance::from_file(&storage, true)?;
     balance.start(time).map_err(|e| {
-        anyhow!(
+        TimeErr::CmdFail(format!(
             "You already started at {}",
             e.with_timezone(&Local).time().format("%H:%M")
-        )
+        ))
     })?;
     println!(
         "You started at {}, let's go!",
@@ -40,7 +40,7 @@ pub fn start<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()> {
 /// such storage yet.
 pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()> {
     let mut balance = TimeBalance::from_file(&storage, false)
-        .map_err(|e| anyhow!("There is no database: {}", e))?;
+        .map_err(|e| TimeErr::Read(format!("There is no database: {}", e)))?;
     let duration = balance.stop(time)?;
     println!(
         "You worked {}:{:02}h today. Enjoy your evening \u{1F389}",
