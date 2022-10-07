@@ -222,6 +222,7 @@ impl TimeBalance {
         upper: DateTime<Utc>,
     ) -> impl Iterator<Item = (&DateTime<Utc>, &DurationDef)> {
         let range = lower..upper;
+        log::trace!("{:?} in {:?}", &range, &self.time_account);
         self.time_account.range(range)
     }
 
@@ -396,6 +397,10 @@ impl TryFrom<&WorkStorage> for TimeBalance {
 
 #[cfg(test)]
 mod tests {
+    use std::{convert::TryInto, ops::Add};
+
+    use crate::storage::WorkSet;
+
     use super::*;
 
     #[test]
@@ -442,5 +447,83 @@ mod tests {
         balance.cancel().expect("Cancel of break works");
         balance.cancel().expect("Cancel of start works");
         assert!(balance.cancel().is_err());
+    }
+
+    #[test]
+    fn daily_range() {
+        let mut balance = TimeBalance::new();
+        let range = balance.daily_range(Utc::today());
+        assert!(range.last().is_none());
+        {
+            let start = Utc::now();
+            balance
+                .start(start - Duration::seconds(5))
+                .expect("starting works");
+            balance.stop(start).expect("stopping works");
+            let range: Vec<(&DateTime<Utc>, &DurationDef)> =
+                balance.daily_range(Utc::today()).collect();
+            assert_eq!(range.len(), 1);
+            assert_eq!(
+                *range.first().expect("has length 1"),
+                (&start, &Duration::seconds(5).into())
+            );
+        }
+
+        {
+            let start = Utc::today().and_hms(20, 55, 0);
+            balance.start(start).expect("Starting works");
+            let stop = start
+                .checked_add_signed(Duration::minutes(90))
+                .expect("adding works");
+            balance.stop(stop).expect("stopping works");
+            let range: Vec<(&DateTime<Utc>, &DurationDef)> =
+                balance.daily_range(Utc::today()).collect();
+            assert_eq!(dbg!(&range).len(), 2);
+            assert_eq!(
+                *range.get(1).expect("has length 2"),
+                (&stop, &Duration::minutes(90).into())
+            );
+        }
+    }
+
+    #[test]
+    fn stringify() {
+        let dur = Duration::nanoseconds(10)
+            .checked_add(&Duration::seconds(1))
+            .expect("adding works");
+        let durdef = DurationDef::from(dur);
+        assert_eq!(durdef.to_string(), dur.to_string());
+
+        let dur_back = Duration::from(&durdef);
+        assert_eq!(dur_back, durdef.into());
+    }
+
+    #[test]
+    fn migrate() {
+        let time = Utc::now();
+        let start = WorkSet {
+            ty: crate::storage::WorkType::Start,
+            duration: std::time::Duration::from_secs(2),
+            start: time,
+        };
+        let br = WorkSet {
+            ty: crate::storage::WorkType::Break,
+            duration: std::time::Duration::from_secs(1),
+            start: time,
+        };
+        let work = WorkSet {
+            ty: crate::storage::WorkType::Work,
+            duration: std::time::Duration::from_secs(100),
+            start: time,
+        };
+        let storage = WorkStorage {
+            name: "test".to_string(),
+            work_sets: vec![start, br, work],
+        };
+
+        let balance: TimeBalance = TimeBalance::try_from(&storage).expect("Conversion works");
+        println!("{}", balance);
+        assert_eq!(balance.start, Some(time));
+        assert_eq!(balance.breaking, Some(time));
     }
 }
