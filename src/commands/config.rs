@@ -2,7 +2,7 @@
 //!
 //! Handler for the `config` subcommand.
 
-use anyhow::Result;
+use crate::errors::Result;
 use std::path::Path;
 
 use crate::balance::{Config, TimeBalance};
