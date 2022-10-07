@@ -1,6 +1,6 @@
 name: build-master
 
-on: 
+on:
   push:
     branches:
       - master
@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build
       run: cargo build --verbose
     - name: Run tests
@@ -17,8 +17,12 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Check format
       run: cargo fmt -- --check
     - name: Check clippy
       run: cargo clippy --all-targets --all-features -- -D warnings
+    - name: Install cargo-llvm-cov
+      uses: taiki-e/install-action@cargo-llvm-cov
+    - name: Check coverage
+      run: cargo llvm-cov --all-features --workspace
