@@ -397,8 +397,6 @@ impl TryFrom<&WorkStorage> for TimeBalance {
 
 #[cfg(test)]
 mod tests {
-    use std::{convert::TryInto, ops::Add};
-
     use crate::storage::WorkSet;
 
     use super::*;
