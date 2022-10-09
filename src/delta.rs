@@ -1,6 +1,6 @@
-use crate::errors::{Result, TimeErr};
+use crate::errors::*;
 use chrono::{DateTime, Duration, Utc};
-use regex::{Captures, Regex};
+use regex::Regex;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct OffsetTime {
@@ -26,12 +26,6 @@ pub fn parse_time(src: &str) -> Result<OffsetTime> {
 
     let duration = regex
         .captures(src)
-        .ok_or_else(|| {
-            Err::<Captures, TimeErr>(TimeErr::Parse(format!(
-                "Failed to parse {} to DateTime",
-                src
-            )))
-        })
         .map(|captures| {
             if captures.len() == 8 {
                 let h = &captures
@@ -58,17 +52,18 @@ pub fn parse_time(src: &str) -> Result<OffsetTime> {
                 Duration::seconds(0)
             }
         })
-        .map_err(|e| TimeErr::Parse(format!("Regex: {:?}", e)))?;
+        .ok_or_else(|| eyre!("{} does not match format [XXh][XXm][XXs][+|-]", src))?;
     if duration.num_seconds() == 0 {
-        return Err(TimeErr::Parse(format!(
-            "Failed to deserialize offset '{}'",
-            src
-        )));
+        bail!(
+            "Value of {} must be > 0 but is {}",
+            src,
+            duration.num_seconds()
+        );
     }
 
     let date_time: DateTime<Utc> = Utc::now()
         .checked_add_signed(duration)
-        .ok_or_else(|| TimeErr::Parse("Failed to construct DateTime".into()))?;
+        .ok_or_else(|| eyre!("Could not convert {} to duration", duration))?;
     Ok(OffsetTime { date_time })
 }
 

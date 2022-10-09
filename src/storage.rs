@@ -3,7 +3,7 @@
 //!
 //! Only kept around to support migrating from the old storage format.
 
-use crate::errors::{Result, TimeErr};
+use crate::errors::*;
 use chrono::{DateTime, Local, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -26,17 +26,14 @@ pub enum WorkType {
 }
 
 impl TryFrom<&str> for WorkType {
-    type Error = TimeErr;
+    type Error = Error;
 
     fn try_from(input: &str) -> Result<Self, Self::Error> {
         match input.to_lowercase().as_str() {
             "work" => Ok(WorkType::Work),
             "start" => Ok(WorkType::Start),
             "break" => Ok(WorkType::Break),
-            _ => Err(TimeErr::Parse(format!(
-                "Failed to parse {} into WorkType",
-                input
-            ))),
+            _ => bail!("Failed to parse {} into WorkType", input),
         }
     }
 }
@@ -99,23 +96,25 @@ impl WorkStorage {
         match File::open(path) {
             Ok(f) => {
                 let reader = BufReader::new(f);
-                serde_json::from_reader(reader).map_err(|e| e.into())
+                serde_json::from_reader(reader).wrap_err("Failed to deserialize storage file")
             }
             Err(_) => {
                 println!("Enter your name: ");
                 let mut buffer = String::new();
-                std::io::stdin().read_line(&mut buffer)?;
+                std::io::stdin()
+                    .read_line(&mut buffer)
+                    .wrap_err("Failed to read line from stdin")?;
                 Ok(WorkStorage::new(buffer.trim_end().to_string()))
             }
         }
     }
 
     fn to_json(&self) -> Result<String> {
-        serde_json::to_string(&self).map_err(|e| e.into())
+        serde_json::to_string(&self).wrap_err("Failed to serialize storage")
     }
 
     pub fn write<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        std::fs::write(path, self.to_json()?)?;
+        std::fs::write(path, self.to_json()?).wrap_err("Failed to write storage to disk")?;
         Ok(())
     }
 
@@ -134,10 +133,10 @@ impl WorkStorage {
             .cloned();
         match start {
             Some(s) => Ok(s),
-            None => Err(TimeErr::CmdFail(format!(
+            None => bail!(usage_err!(
                 "You want to stop but you never started, strange work ethics, {}",
                 self.name
-            ))),
+            )),
         }
     }
 
@@ -150,7 +149,7 @@ impl WorkStorage {
             .cloned();
         match breaked {
             Some(s) => Ok(s),
-            None => Err(TimeErr::CmdFail("You deserve that break".into())),
+            None => bail!(usage_err!("You deserve that break")),
         }
     }
 }
