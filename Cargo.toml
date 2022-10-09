@@ -17,7 +17,7 @@ maintenance = { status = "actively-developed" }
 
 [dependencies]
 color-eyre = "0.5.7"
-thiserror = "*"
+thiserror = "1"
 
 chrono = { version = "0.4", features = ["serde"] }
 colored = "1.9"
