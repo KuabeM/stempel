@@ -66,7 +66,8 @@ fn run() -> color_eyre::Result<()> {
         .init();
     color_eyre::install()?;
 
-    let default_path = PathBuf::from(std::env::var("HOME")? + "/.config/stempel.json");
+    let fallback = PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| "/".to_string()));
+    let default_path = dirs::config_dir().unwrap_or(fallback).join("stempel.json");
 
     match Opt::from_args() {
         Opt::Start(action) => {
