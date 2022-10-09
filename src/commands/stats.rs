@@ -2,9 +2,10 @@
 //!
 //! The main entry point is `stats` which then further decides what to do.
 
-use crate::balance::{DurationDef, TimeBalance};
+use crate::balance::{Config, DurationDef, TimeBalance};
 
-use crate::errors::{Result, TimeErr};
+use crate::errors::*;
+use crate::month;
 use chrono::{DateTime, Datelike, Duration, Local, Month, Utc};
 use colored::*;
 use itertools::Itertools;
@@ -15,17 +16,16 @@ use std::path::Path;
 /// Prints a summary of the current storage either for one month.
 ///
 /// Handler for the `stats` sub command.
-pub fn stats<P: AsRef<Path>>(storage: P, month: Option<crate::month::Month>) -> Result<()> {
+pub fn stats<P: AsRef<Path>>(storage: P, month: Option<month::Month>) -> Result<()> {
     let year = Utc::now().year();
     let balance = TimeBalance::from_file(&storage, false)?;
     if let Some(m) = month {
-        let m = Month::from_u8(m as u8)
-            .ok_or_else(|| TimeErr::Parse("Failed to parse month".into()))?;
+        let m = Month::from_u8(m as u8).ok_or_else(|| eyre!("Failed to parse {} into month", m))?;
         monthly_stats(&balance, year, m);
     } else {
         let m = Month::from_u32(Utc::now().month())
-            .ok_or_else(|| TimeErr::Parse("Failed to parse current month".into()))?;
-        let default_cfg = crate::balance::Config::default();
+            .ok_or_else(|| eyre!("Failed to parse current month"))?;
+        let default_cfg = Config::default();
         let history = balance.config.as_ref().unwrap_or(&default_cfg).month_stats;
         println!("Here are your stats for the last {} months:", history);
         stats_last_month(&balance, year, m, history);

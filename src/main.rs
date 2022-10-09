@@ -1,4 +1,3 @@
-use anyhow::Result;
 use env_logger::Env;
 use log::debug;
 use std::path::PathBuf;
@@ -6,6 +5,7 @@ use structopt::StructOpt;
 
 use stempel::commands;
 use stempel::delta::{parse_time, OffsetTime};
+use stempel::errors::UsageError;
 use stempel::month::Month;
 
 #[derive(StructOpt, Debug)]
@@ -28,7 +28,7 @@ enum Opt {
         #[structopt(short, long)]
         month: Option<Month>,
     },
-    /// Migrate json database from old to new format, creates backup file
+    /// Migrate json storage from old to new format, creates backup file
     /// `*.bak` overwriting the original.
     Migrate(OptPath),
     /// Configure internals of stempel.
@@ -60,10 +60,11 @@ struct OptPath {
     path: Option<PathBuf>,
 }
 
-fn run() -> Result<()> {
+fn run() -> color_eyre::Result<()> {
     env_logger::from_env(Env::default().default_filter_or("info"))
         .format_timestamp(None)
         .init();
+    color_eyre::install()?;
 
     let default_path = PathBuf::from(std::env::var("HOME")? + "/.config/stempel.json");
 
@@ -113,9 +114,15 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-fn main() {
+fn main() -> color_eyre::Result<()> {
     if let Err(e) = run() {
-        log::error!("{}", e.to_string());
-        std::process::exit(1);
+        if let Some(inner) = e.downcast_ref::<UsageError>() {
+            log::error!("{}", inner);
+            std::process::exit(1);
+        } else {
+            Err(e)
+        }
+    } else {
+        Ok(())
     }
 }

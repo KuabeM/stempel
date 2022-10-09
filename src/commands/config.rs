@@ -2,7 +2,7 @@
 //!
 //! Handler for the `config` subcommand.
 
-use crate::errors::Result;
+use crate::errors::*;
 use std::path::Path;
 
 use crate::balance::{Config, TimeBalance};
@@ -33,13 +33,17 @@ pub fn configure<P: AsRef<Path>>(storage: P) -> Result<()> {
 
     let mut input = String::new();
     println!("    Number of months to display ({}): ", cfg.month_stats);
-    std::io::stdin().read_line(&mut input)?;
+    std::io::stdin()
+        .read_line(&mut input)
+        .wrap_err("Failed to read line from stdin")?;
     let month_history = input.trim().parse::<u8>().unwrap_or(cfg.month_stats);
 
     let daily_hours = cfg.daily_hours.unwrap_or_default();
     println!("    Daily working hours ({}): ", daily_hours);
     input.clear();
-    std::io::stdin().read_line(&mut input)?;
+    std::io::stdin()
+        .read_line(&mut input)
+        .wrap_err("Failed to read line from stdin")?;
     let daily_hours = input.trim().parse::<u8>().unwrap_or(daily_hours);
     let cfg = Config {
         month_stats: month_history,

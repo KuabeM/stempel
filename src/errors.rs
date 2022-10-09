@@ -1,23 +1,20 @@
 //! Errors for stempel.
 
+pub use color_eyre::eyre::{bail, eyre, Error, Result, WrapErr};
 use thiserror::Error;
 
-pub type Result<T, E = TimeErr> = std::result::Result<T, E>;
+#[derive(Debug, Error)]
+pub struct UsageError(pub String);
 
-#[derive(Error, Debug)]
-pub enum TimeErr {
-    #[error("Command failed: {0}")]
-    CmdFail(String),
-    #[error("Internal error: {0}")]
-    Internal(String),
-    #[error("Read failed: {0}")]
-    Read(String),
-    #[error("Write failed: {0}")]
-    Write(String),
-    #[error("Parsing failed: {0}")]
-    Parse(String),
-    #[error("Io error: {0}")]
-    Io(#[from] std::io::Error),
-    #[error("Serde: {0}")]
-    Serde(#[from] serde_json::Error),
+impl std::fmt::Display for UsageError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[macro_export]
+macro_rules! usage_err {
+    ($($arg:tt)*) => {
+        UsageError(format!($($arg)*))
+    };
 }
