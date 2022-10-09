@@ -529,7 +529,7 @@ dependencies = [
 
 [[package]]
 name = "stempel"
-version = "0.13.1-alpha"
+version = "0.13.1"
 dependencies = [
  "chrono",
  "color-eyre",
