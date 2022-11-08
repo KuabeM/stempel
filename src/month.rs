@@ -6,7 +6,7 @@ use std::fmt;
 use std::str::FromStr;
 use std::{convert::TryFrom, ops::Sub};
 
-#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
 #[repr(u8)]
 pub enum Month {
     January = 1,

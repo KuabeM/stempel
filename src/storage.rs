@@ -207,7 +207,7 @@ fn serde_ok() {
         .unwrap()
         .into();
     store.work_sets[0].start = dt;
-    assert_eq!(store_raw.replace('\n', "").replace(' ', ""), store_ser);
+    assert_eq!(store_raw.replace(['\n', ' '], ""), store_ser);
     assert_eq!(store_ser, store.to_json().expect("Failed to serialize"));
 }
 
