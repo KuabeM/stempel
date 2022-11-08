@@ -3,7 +3,7 @@ name = "stempel"
 version = "0.13.1"
 authors = ["Korbinian Maier <korbinian.maier@tum.de>"]
 license = "MIT"
-edition = "2018"
+edition = "2021"
 readme = "README.md"
 description = "Track the time you spent working"
 categories = ["command-line-utilities"]
@@ -27,10 +27,10 @@ itertools = "0.10"
 log = "0.4"
 num-traits = { default-features = false, version = "0.2" }
 num_enum = { default-features = false, version = "0.4.3" }
-regex = { default-features = false, features = [ "std", "perf" ], version = "1.4" }
 serde = { version = "1.0", features = ["derive"], default-features = false }
 serde_json = "1.0"
 structopt = "0.3"
+humantime = "2.1.0"
 
 [profile.release]
 lto = true

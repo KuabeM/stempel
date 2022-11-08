@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 use stempel::commands;
-use stempel::delta::{parse_time, OffsetTime};
+use stempel::delta::parse_time;
 use stempel::errors::UsageError;
 use stempel::month::Month;
 
@@ -28,8 +28,8 @@ enum Opt {
         #[structopt(short, long)]
         month: Option<Month>,
     },
-    /// Migrate json storage from old to new format, creates backup file
-    /// `*.bak` overwriting the original.
+    /// Migrate json storage from old to new format, creates backup file `*.bak` overwriting the
+    /// original.
     Migrate(OptPath),
     /// Configure internals of stempel.
     Configure(OptPath),
@@ -48,8 +48,8 @@ enum StartStop {
 #[derive(StructOpt, Debug, PartialEq)]
 struct Action {
     /// Offset to current time in format `XX[h|m|s][+-]`.
-    #[structopt(short, long, parse(try_from_str = parse_time))]
-    offset: Option<OffsetTime>,
+    #[structopt(short, long, parse(try_from_str = parse_time), default_value = "0s+")]
+    offset: chrono::DateTime<chrono::Utc>,
     /// Path to storage file.
     #[structopt(short, long)]
     storage: Option<PathBuf>,
@@ -71,21 +71,19 @@ fn run() -> color_eyre::Result<()> {
 
     match Opt::from_args() {
         Opt::Start(action) => {
-            let time = action.offset.unwrap_or_default().date_time;
-            debug!("Start at {}, store in {:?}", time, action.storage);
-            commands::control::start(action.storage.unwrap_or(default_path), time)?;
+            debug!("Start at {}, store in {:?}", action.offset, action.storage);
+            commands::control::start(action.storage.unwrap_or(default_path), action.offset)?;
         }
         Opt::Stop(action) => {
-            let time = action.offset.unwrap_or_default().date_time;
-            debug!("Stop at {:?}, store in {:?}", time, action.storage);
-            commands::control::stop(action.storage.unwrap_or(default_path), time)?;
+            debug!("Stop at {:?}, store in {:?}", action.offset, action.storage);
+            commands::control::stop(action.storage.unwrap_or(default_path), action.offset)?;
         }
         Opt::Break(startstop) => {
             let (is_start, action) = match startstop {
                 StartStop::Start(action) => (true, action),
                 StartStop::Stop(action) => (false, action),
             };
-            let time = action.offset.unwrap_or_default().date_time;
+            let time = action.offset;
             let storage = action.storage.unwrap_or(default_path);
             debug!("Break at {}, store in {:?}", time, storage);
             match is_start {
