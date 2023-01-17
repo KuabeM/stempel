@@ -25,6 +25,8 @@ stempel cancel
 stempel break stop --offset 1h+
 # Finish the day
 stempel stop
+# Alternatively, you can specify the time point to stop as a time in 24h format
+stempel stop --time 17:38
 ```
 
 For a detailed reference, run `stempel help` or `stempel SUBCOMMAND --help`.
@@ -48,11 +50,12 @@ Available subcommands are:
 
 #### `--offset`
 
-This option allows to specify a positive or negative offset to the current
-time.  In other words, giving the option `--offset 10m+` means that the command
-is executed with the current time plus 10 minutes, `20s-` stands for current
-time minus 20 seconds. The syntax allows `[Xh][Xm][Xs](+-)` where `X` can be
-any number and `h|m|s` refer to hours, minutes and seconds, respectively.
+This option allows to specify a positive or negative offset to the current time.
+In other words, giving the option `--offset 10m+` means that the command is
+executed with the current time plus 10 minutes, `20s-` stands for current time
+minus 20 seconds. The syntax allows `[Xh][Xm][Xs](+-)` where `X` can be any
+number and `h|m|s` refer to hours, minutes and seconds, respectively. Overridden
+by `--time`below.
 
 Some examples:
 
@@ -60,6 +63,12 @@ Some examples:
   - `1h90s-`: 1 hour 90 seconds before now
   - `20m30s+`: 20 minutes, 30 seconds from now
   - `60s-`: one minute before now
+
+#### `--time`
+
+This options allows to specify a time for the respective action. Use it if you
+want to start or stop at a certain time. The format is `HH:MM` in 24h where the
+date is set to the current day, e.g. `13:47` means today at `13h 47`.
 
 #### `--storage`
 
