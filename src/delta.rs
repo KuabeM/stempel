@@ -26,10 +26,9 @@ pub fn parse_offset(src: &str) -> Result<DateTime<Utc>> {
 
 pub fn parse_time(src: &str) -> Result<DateTime<Utc>> {
     let time = chrono::NaiveTime::parse_from_str(src, "%H:%M")?;
-    let date_time = chrono::Local::today()
-        .and_time(time)
-        .ok_or(eyre!("Could not create time"))?;
-    let utc = date_time.with_timezone(&Utc);
+    let date_time = chrono::Utc::now().date_naive().and_time(time);
+    let local = date_time.and_local_timezone(chrono::Local).unwrap();
+    let utc = DateTime::<Utc>::from(local);
     log::trace!("Deserialized {} to a time point {}", src, date_time);
     Ok(utc)
 }
@@ -95,33 +94,71 @@ mod tests {
 
     #[test]
     fn deserialize_time_works() {
+        env_logger::init();
         assert_eq!(
             parse_time("10:27").unwrap(),
-            chrono::Local::today().and_hms(10, 27, 0)
+            Utc::now()
+                .date_naive()
+                .and_hms_opt(9, 27, 0)
+                .unwrap()
+                .and_local_timezone(Utc)
+                .unwrap()
         );
         assert_eq!(
             parse_time("13:00").unwrap(),
-            chrono::Local::today().and_hms(13, 00, 0)
+            Utc::now()
+                .date_naive()
+                .and_hms_opt(12, 0, 0)
+                .unwrap()
+                .and_local_timezone(Utc)
+                .unwrap()
         );
         assert_eq!(
             parse_time("1:4").unwrap(),
-            chrono::Local::today().and_hms(1, 4, 0)
+            Utc::now()
+                .date_naive()
+                .and_hms_opt(0, 4, 0)
+                .unwrap()
+                .and_local_timezone(Utc)
+                .unwrap()
         );
         assert_eq!(
             parse_time("1:34").unwrap(),
-            chrono::Local::today().and_hms(1, 34, 0)
+            Utc::now()
+                .date_naive()
+                .and_hms_opt(0, 34, 0)
+                .unwrap()
+                .and_local_timezone(Utc)
+                .unwrap()
         );
         assert_eq!(
             parse_time("00:59").unwrap(),
-            chrono::Local::today().and_hms(00, 59, 0)
+            Utc::now()
+                .date_naive()
+                .checked_sub_days(chrono::Days::new(1))
+                .expect("Subtractio works")
+                .and_hms_opt(23, 59, 0)
+                .unwrap()
+                .and_local_timezone(Utc)
+                .unwrap()
         );
         assert_eq!(
             parse_time("19:18").unwrap(),
-            chrono::Local::today().and_hms(19, 18, 0)
+            Utc::now()
+                .date_naive()
+                .and_hms_opt(18, 18, 0)
+                .unwrap()
+                .and_local_timezone(Utc)
+                .unwrap()
         );
         assert_eq!(
-            parse_time("23:16").unwrap(),
-            chrono::Local::today().and_hms(23, 16, 0)
+            parse_time("1:00").unwrap(),
+            Utc::now()
+                .date_naive()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_local_timezone(Utc)
+                .unwrap()
         );
     }
 
