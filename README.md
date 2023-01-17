@@ -72,7 +72,7 @@ date is set to the current day, e.g. `13:47` means today at `13h 47`.
 
 #### `--storage`
 
-Specifiy a path to the storage file where all work entries are written to. The
+Specify a path to the storage file where all work entries are written to. The
 path defaults to `$HOME/.config/stempel.json` and is created on the first
 invocation of the `start` subcommand.
 
