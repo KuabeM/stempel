@@ -55,6 +55,7 @@ pub fn configure<P: AsRef<Path>>(storage: P) -> Result<()> {
 
     balance.config = Some(cfg);
 
+    balance.canocicalize()?;
     balance.to_file(storage)?;
 
     Ok(())

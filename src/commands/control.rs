@@ -29,6 +29,7 @@ pub fn start<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()> {
             .to_string()
             .green()
     );
+    balance.canocicalize()?;
     balance.to_file(storage)?;
 
     Ok(())
@@ -46,6 +47,7 @@ pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()> {
         duration.num_hours(),
         duration.num_minutes() % 60
     );
+    balance.canocicalize()?;
     balance.to_file(&storage)?;
 
     Ok(())
@@ -58,6 +60,7 @@ pub fn stop<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()> {
 pub fn cancel<P: AsRef<Path>>(storage: P) -> Result<()> {
     let mut balance = TimeBalance::from_file(&storage, false)?;
     balance.cancel()?;
+    balance.canocicalize()?;
     balance.to_file(&storage)?;
     println!("Canceled last action.");
     Ok(())

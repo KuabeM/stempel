@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 
 use std::convert::TryFrom;
 use std::fs::{File, OpenOptions};
+use std::ops::Add;
+use std::ops::AddAssign;
 use std::path::Path;
 use std::{
     collections::BTreeMap,
@@ -64,11 +66,25 @@ impl ToString for DurationDef {
 }
 
 /// Wrapper around chrono::Duration for serde support
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy)]
 pub(crate) struct DurationDef {
     #[serde(flatten)]
     #[serde(with = "ChronoDuration")]
     inner: Duration,
+}
+
+impl AddAssign for DurationDef {
+    fn add_assign(&mut self, rhs: Self) {
+        self.inner.checked_add(&rhs.into());
+    }
+}
+
+impl Add for DurationDef {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        let dur = self.inner + rhs.into();
+        dur.into()
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -385,6 +401,40 @@ impl TimeBalance {
             sum,
         }
     }
+
+    /// Merge entries of the same day in the storage.
+    pub fn canocicalize(&mut self) -> Result<()> {
+        let mut current = self.time_account.iter();
+        let mut peek = current.clone().skip(1).peekable();
+        let mut merge = Vec::new();
+        loop {
+            match (peek.peek(), current.next()) {
+                (Some(ne), Some(cur)) => {
+                    if ne.0.date_naive() == cur.0.date_naive() {
+                        merge.push((cur.0.clone(), ne.0.clone()));
+                    }
+                    peek.next();
+                }
+                _ => break,
+            }
+        }
+
+        log::trace!("Removing keys {}: {:?}", merge.len(), merge);
+        for (del_k, mer_k) in merge {
+            let added = self
+                .time_account
+                .remove(&del_k)
+                .ok_or(eyre!("Failed to remove duplicate element"))?;
+            let cur = self.time_account.get(&mer_k).ok_or(eyre!("Failed to update element"))?;
+            log::trace!("Adding {:?} to {:?}", added, cur);
+            *self
+                .time_account
+                .get_mut(&mer_k)
+                .ok_or(eyre!("Failed to canocicalize"))? = *cur + added.clone();
+        }
+
+        Ok(())
+    }
 }
 
 pub(crate) struct BreakeState {
@@ -584,5 +634,33 @@ mod tests {
         println!("{}", balance);
         assert_eq!(balance.start, Some(time));
         assert_eq!(balance.breaking, Some(time));
+    }
+
+    fn add_times(balance: &mut TimeBalance, dt: DateTime<Utc>, dur: i64) {
+        balance
+            .start(dt - Duration::seconds(10 + dur))
+            .expect("starting works");
+        balance.stop(dt).expect("stopping works");
+    }
+
+    #[test]
+    fn canocicalize_works() {
+        let mut balance = TimeBalance::new();
+        let now = Utc.with_ymd_and_hms(2022, 1, 12, 1, 20, 30).unwrap();
+        add_times(&mut balance, now, 0);
+        add_times(&mut balance, now + Duration::seconds(10), 2);
+        add_times(&mut balance, now + Duration::seconds(20), 4);
+        add_times(&mut balance, now + Duration::seconds(30), 8);
+        assert_eq!(balance.time_account.len(), 4);
+        balance.canocicalize().expect("Works");
+        assert_eq!(balance.time_account.len(), 1);
+        let sum = balance
+            .time_account
+            .iter()
+            .fold(Duration::zero(), |mut acc, (_, v)| {
+                acc = acc.checked_add(&v.into()).unwrap();
+                acc
+            });
+        assert_eq!(sum, Duration::seconds(54));
     }
 }
