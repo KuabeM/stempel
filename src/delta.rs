@@ -30,11 +30,7 @@ pub fn parse_time(src: &str) -> Result<DateTime<Utc>> {
         .and_time(time)
         .ok_or(eyre!("Could not create time"))?;
     let utc = date_time.with_timezone(&Utc);
-    log::trace!(
-        "Deserialized {} to a time point {}",
-        src,
-        date_time
-    );
+    log::trace!("Deserialized {} to a time point {}", src, date_time);
     Ok(utc)
 }
 

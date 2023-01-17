@@ -102,7 +102,7 @@ fn run() -> color_eyre::Result<()> {
         }
         Opt::Stats { storage, month } => {
             debug!("Stats of `{:?}`", storage);
-            commands::stats::stats(&storage.unwrap_or(default_path), month)?;
+            commands::stats::stats(storage.unwrap_or(default_path), month)?;
         }
         Opt::Migrate(opt) => {
             debug!("Migrate");
