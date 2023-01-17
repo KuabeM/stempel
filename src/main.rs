@@ -1,4 +1,3 @@
-use env_logger::Env;
 use log::debug;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -64,11 +63,6 @@ struct OptPath {
 }
 
 fn run() -> color_eyre::Result<()> {
-    env_logger::from_env(Env::default().default_filter_or("info"))
-        .format_timestamp(None)
-        .init();
-    color_eyre::install()?;
-
     let fallback = PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| "/".to_string()));
     let default_path = dirs::config_dir().unwrap_or(fallback).join("stempel.json");
 
@@ -119,6 +113,8 @@ fn run() -> color_eyre::Result<()> {
 }
 
 fn main() -> color_eyre::Result<()> {
+    env_logger::init();
+    color_eyre::install()?;
     if let Err(e) = run() {
         if let Some(inner) = e.downcast_ref::<UsageError>() {
             log::error!("{}", inner);

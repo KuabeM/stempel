@@ -1,6 +1,6 @@
 # Stempel
 
-[![Build](https://img.shields.io/github/workflow/status/KuabeM/stempel/build-master)](https://github.com/KuabeM/stempel/actions?query=workflow%3Abuild-master)
+[![Build](https://img.shields.io/github/actions/workflow/status/KuabeM/stempel/build_master.yml)](https://github.com/KuabeM/stempel/actions?query=workflow%3Abuild-master)
 [![Crates.io](https://img.shields.io/crates/v/stempel.svg)](https://crates.io/crates/stempel)
 
 Small utility to store and calculate the time spent at work.

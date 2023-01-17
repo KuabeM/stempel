@@ -16,21 +16,21 @@ exclude = [".github/*"]
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-color-eyre = { default-features = false, version = "0.5.7" }
+color-eyre = { default-features = false, version = "0.6" }
 thiserror = "1"
 
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
-colored = "1.9"
+colored = "2"
 dirs = "4"
-env_logger = { default-features = false, version = "0.7" }
+env_logger = { default-features = false, features = ["auto-color", "regex"], version = "0.10" }
 itertools = "0.10"
 log = "0.4"
 num-traits = { default-features = false, version = "0.2" }
-num_enum = { default-features = false, version = "0.4.3" }
+num_enum = { default-features = false, version = "0.5" }
 serde = { version = "1.0", features = ["derive"], default-features = false }
 serde_json = "1.0"
 structopt = "0.3"
-humantime = "2.1.0"
+humantime = "2"
 
 [profile.release]
 lto = true

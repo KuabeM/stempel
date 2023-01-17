@@ -21,14 +21,14 @@ pub fn stats<P: AsRef<Path>>(storage: P, month: Option<month::Month>) -> Result<
     let balance = TimeBalance::from_file(&storage, false)?;
     if let Some(m) = month {
         let m = Month::from_u8(m as u8).ok_or_else(|| eyre!("Failed to parse {} into month", m))?;
-        monthly_stats(&balance, year, m);
+        monthly_stats(&balance, year, m)?;
     } else {
         let m = Month::from_u32(Utc::now().month())
             .ok_or_else(|| eyre!("Failed to parse current month"))?;
         let default_cfg = Config::default();
         let history = balance.config.as_ref().unwrap_or(&default_cfg).month_stats;
         println!("Here are your stats for the last {} months:", history);
-        stats_last_month(&balance, year, m, history);
+        stats_last_month(&balance, year, m, history)?;
     }
 
     println!();
@@ -38,7 +38,7 @@ pub fn stats<P: AsRef<Path>>(storage: P, month: Option<month::Month>) -> Result<
 }
 
 /// Generate month, year combination for past months and print the respective stats for them.
-fn stats_last_month(balance: &TimeBalance, year: i32, month: Month, history: u8) {
+fn stats_last_month(balance: &TimeBalance, year: i32, month: Month, history: u8) -> Result<()> {
     let mut months: Vec<Month> = vec![month];
     let mut years: Vec<i32> = vec![year];
     (0..history).fold(month, |a, _| {
@@ -55,14 +55,15 @@ fn stats_last_month(balance: &TimeBalance, year: i32, month: Month, history: u8)
     log::trace!("Years: {:?}, months: {:?}", years, months);
 
     for (y, m) in years.iter().zip(months) {
-        monthly_stats(balance, *y, m);
+        monthly_stats(balance, *y, m)?;
     }
+    Ok(())
 }
 
 /// Prints the entries in the `storage` for one `month` grouped by weeks.
-fn monthly_stats(balance: &TimeBalance, year: i32, month: Month) {
+fn monthly_stats(balance: &TimeBalance, year: i32, month: Month) -> Result<()> {
     let month_entries: Vec<(&DateTime<Utc>, &DurationDef)> =
-        balance.month_range(year, month).collect();
+        balance.month_range(year, month)?.collect();
     log::trace!("Month {:?}", month);
 
     if !month_entries.is_empty() {
@@ -86,6 +87,7 @@ fn monthly_stats(balance: &TimeBalance, year: i32, month: Month) {
             );
         }
     }
+    Ok(())
 }
 
 /// Print current state of started work, running and finished breaks.
@@ -138,13 +140,13 @@ fn show_state(balance: &TimeBalance) {
     if let Some(daily) = balance.config.as_ref().unwrap_or_default().daily_hours {
         let daily = Duration::hours(daily as i64);
         let remaining = daily - dur + pause;
-        let daily_range =
-            balance
-                .daily_range(Local::today())
-                .fold(Duration::seconds(0), |acc, (_, dur)| {
-                    log::trace!("dur: {:?}", dur);
-                    acc + dur.clone().into()
-                });
+        let daily_range = balance
+            .daily_range(Local::now().date_naive(), Local)
+            .unwrap() // TODO: get rid of unwrap
+            .fold(Duration::seconds(0), |acc, (_, dur)| {
+                log::trace!("dur: {:?}", dur);
+                acc + dur.clone().into()
+            });
         log::trace!(
             "Prevously worked hours {:?}, remaining: {:?}",
             daily_range,

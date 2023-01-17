@@ -240,35 +240,67 @@ impl TimeBalance {
         &self,
         year: i32,
         month: Month,
-    ) -> impl Iterator<Item = (&DateTime<Utc>, &DurationDef)> {
+    ) -> Result<impl Iterator<Item = (&DateTime<Utc>, &DurationDef)>> {
         log::trace!("Range for month {:?}", month);
+        let current = Utc
+            .with_ymd_and_hms(year, month.number_from_month(), 1, 0, 0, 0)
+            .latest()
+            .ok_or(eyre!("Could not construct range"))?;
         let days_in_m = if month.number_from_month() == 12 {
-            Utc.ymd(year + 1, month.succ().number_from_month(), 1)
-                .signed_duration_since(Utc.ymd(year, month.number_from_month(), 1))
+            Utc.with_ymd_and_hms(year + 1, month.succ().number_from_month(), 1, 0, 0, 0)
+                .earliest()
+                .ok_or(eyre!("Could not construct range"))?
+                .signed_duration_since(current)
                 .num_days()
         } else {
-            Utc.ymd(year, month.succ().number_from_month(), 1)
-                .signed_duration_since(Utc.ymd(year, month.number_from_month(), 1))
+            Utc.with_ymd_and_hms(year, month.succ().number_from_month(), 1, 0, 0, 0)
+                .earliest()
+                .ok_or(eyre!("Could not construct range"))?
+                .signed_duration_since(current)
                 .num_days()
         };
         log::trace!("Days in month {:?}: {}", month, days_in_m);
-        let lower = Utc.ymd(year, month.number_from_month(), 1).and_hms(0, 0, 0);
+        let lower = Utc
+            .with_ymd_and_hms(year, month.number_from_month(), 1, 0, 0, 0)
+            .earliest()
+            .ok_or(eyre!("Could not create range"))?;
         let upper = Utc
-            .ymd(year, month.number_from_month(), days_in_m as u32)
-            .and_hms(23, 59, 59);
+            .with_ymd_and_hms(
+                year,
+                month.number_from_month(),
+                days_in_m as u32,
+                23,
+                59,
+                59,
+            )
+            .latest()
+            .ok_or(eyre!("Could not create range"))?;
         log::trace!("Lower: {:?}, Upper: {:?}", lower, upper);
-        self.range(lower, upper)
+        Ok(self.range(lower, upper))
     }
 
     /// Extract all entries from one day.
     pub fn daily_range<T: chrono::offset::TimeZone>(
         &self,
-        day: Date<T>,
-    ) -> impl Iterator<Item = (&DateTime<Utc>, &DurationDef)> {
+        day: NaiveDate,
+        tz: T,
+    ) -> Result<impl Iterator<Item = (&DateTime<Utc>, &DurationDef)>> {
         log::trace!("Entries for {:?}", day);
-        let start = day.and_hms(0, 0, 0).with_timezone(&Utc);
-        let end = day.and_hms(23, 59, 59).with_timezone(&Utc);
-        self.range(start, end)
+        let start = day
+            .and_hms_opt(0, 0, 0)
+            .ok_or(eyre!("Could not construct range"))?
+            .and_local_timezone(tz.clone())
+            .earliest()
+            .ok_or(eyre!("Could not construct range"))?
+            .with_timezone(&Utc);
+        let end = day
+            .and_hms_opt(23, 59, 59)
+            .ok_or(eyre!("Could not construct range"))?
+            .and_local_timezone(tz)
+            .latest()
+            .ok_or(eyre!("Could not construct range"))?
+            .with_timezone(&Utc);
+        Ok(self.range(start, end))
     }
 
     /// Insert a start time and the corresponding duration into map.
@@ -414,7 +446,10 @@ mod tests {
 
     #[test]
     fn from_file_works() {
-        let naive = NaiveDate::from_ymd(2021, 1, 27).and_hms(14, 19, 21);
+        let naive = NaiveDate::from_ymd_opt(2021, 1, 27)
+            .unwrap()
+            .and_hms_opt(14, 19, 21)
+            .unwrap();
         let utc_dt = DateTime::from_utc(naive, chrono::Utc);
         let dur: DurationDef = Duration::seconds(10).into();
         let input = r#"{"start":null,"breaking":null,"breaks":[],"account":{""#.to_string()
@@ -431,7 +466,10 @@ mod tests {
     #[test]
     fn to_json_works() {
         let mut balance = TimeBalance::new();
-        let naive = NaiveDate::from_ymd(2021, 1, 27).and_hms(14, 19, 21);
+        let naive = NaiveDate::from_ymd_opt(2021, 1, 27)
+            .unwrap()
+            .and_hms_opt(14, 19, 21)
+            .unwrap();
         let utc_dt = DateTime::from_utc(naive, chrono::Utc);
         let dur = Duration::seconds(10).into();
         balance.insert(utc_dt, dur);
@@ -461,7 +499,9 @@ mod tests {
     #[test]
     fn daily_range() {
         let mut balance = TimeBalance::new();
-        let range = balance.daily_range(Utc::today());
+        let range = balance
+            .daily_range(Utc::now().date_naive(), Utc)
+            .expect("range works");
         assert!(range.last().is_none());
         {
             let start = Utc::now();
@@ -469,8 +509,10 @@ mod tests {
                 .start(start - Duration::seconds(5))
                 .expect("starting works");
             balance.stop(start).expect("stopping works");
-            let range: Vec<(&DateTime<Utc>, &DurationDef)> =
-                balance.daily_range(Utc::today()).collect();
+            let range: Vec<(&DateTime<Utc>, &DurationDef)> = balance
+                .daily_range(Utc::now().date_naive(), Utc)
+                .expect("range works")
+                .collect();
             assert_eq!(range.len(), 1);
             assert_eq!(
                 *range.first().expect("has length 1"),
@@ -479,14 +521,22 @@ mod tests {
         }
 
         {
-            let start = Utc::today().and_hms(20, 55, 0);
+            let start = Utc::now()
+                .date_naive()
+                .and_hms_opt(20, 55, 0)
+                .unwrap()
+                .and_local_timezone(Utc)
+                .earliest()
+                .unwrap();
             balance.start(start).expect("Starting works");
             let stop = start
                 .checked_add_signed(Duration::minutes(90))
                 .expect("adding works");
             balance.stop(stop).expect("stopping works");
-            let range: Vec<(&DateTime<Utc>, &DurationDef)> =
-                balance.daily_range(Utc::today()).collect();
+            let range: Vec<(&DateTime<Utc>, &DurationDef)> = balance
+                .daily_range(Utc::now().date_naive(), Utc)
+                .expect("range works")
+                .collect();
             assert_eq!(dbg!(&range).len(), 2);
             assert_eq!(
                 *range.get(1).expect("has length 2"),
