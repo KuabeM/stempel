@@ -81,8 +81,8 @@ invocation of the `start` subcommand.
   - Statistics:
     * [x] statistics of last two months grouped by weeks
     * [ ] allow printing only ranges of stats, e.g. months, years...
-    * [ ] display long hours
-  - [ ] Tracking: allow to specify start and stop time as cli arg
+    * [x] display long hours
+  - [x] Tracking: allow to specify start and stop time as cli arg
   - [x] Tracking: cancel started work
   - [x] Specify an offset from current time when starting or stopping
   - [x] Add more possibilities to offset
