@@ -191,7 +191,7 @@ impl TimeBalance {
     pub(crate) fn accumulate_breaks(&self) -> Duration {
         self.breaks
             .iter()
-            .fold(Duration::seconds(0), |acc, b| acc + b.clone().1.into())
+            .fold(Duration::seconds(0), |acc, b| acc + b.1.into())
     }
 
     /// Get all breaks.
@@ -400,16 +400,11 @@ impl TimeBalance {
         let mut current = self.time_account.iter();
         let mut peek = current.clone().skip(1).peekable();
         let mut merge = Vec::new();
-        loop {
-            match (peek.peek(), current.next()) {
-                (Some(ne), Some(cur)) => {
-                    if ne.0.date_naive() == cur.0.date_naive() {
-                        merge.push((cur.0.clone(), ne.0.clone()));
-                    }
-                    peek.next();
-                }
-                _ => break,
+        while let (Some(ne), Some(cur)) = (peek.peek(), current.next()) {
+            if ne.0.date_naive() == cur.0.date_naive() {
+                merge.push((*cur.0, *ne.0));
             }
+            peek.next();
         }
 
         log::trace!("Removing keys {}: {:?}", merge.len(), merge);
@@ -426,7 +421,7 @@ impl TimeBalance {
             *self
                 .time_account
                 .get_mut(&mer_k)
-                .ok_or(eyre!("Failed to canocicalize"))? = *cur + added.clone();
+                .ok_or(eyre!("Failed to canocicalize"))? = *cur + added;
         }
 
         Ok(())

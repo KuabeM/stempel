@@ -145,7 +145,7 @@ fn show_state(balance: &TimeBalance) {
             .unwrap() // TODO: get rid of unwrap
             .fold(Duration::seconds(0), |acc, (_, dur)| {
                 log::trace!("dur: {:?}", dur);
-                acc + dur.clone().into()
+                acc + dur.into()
             });
         log::trace!(
             "Previously worked hours {:?}, remaining: {:?}",
