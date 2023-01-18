@@ -96,7 +96,6 @@ mod tests {
 
     #[test]
     fn deserialize_time_works() {
-        env_logger::init();
         assert_eq!(
             parse_time("10:27").unwrap(),
             Utc::now()

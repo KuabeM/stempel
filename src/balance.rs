@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fs::{File, OpenOptions};
 use std::ops::Add;
-use std::ops::AddAssign;
 use std::path::Path;
 use std::{
     collections::BTreeMap,
@@ -71,12 +70,6 @@ pub(crate) struct DurationDef {
     #[serde(flatten)]
     #[serde(with = "ChronoDuration")]
     inner: Duration,
-}
-
-impl AddAssign for DurationDef {
-    fn add_assign(&mut self, rhs: Self) {
-        self.inner.checked_add(&rhs.into());
-    }
 }
 
 impl Add for DurationDef {
@@ -425,7 +418,10 @@ impl TimeBalance {
                 .time_account
                 .remove(&del_k)
                 .ok_or(eyre!("Failed to remove duplicate element"))?;
-            let cur = self.time_account.get(&mer_k).ok_or(eyre!("Failed to update element"))?;
+            let cur = self
+                .time_account
+                .get(&mer_k)
+                .ok_or(eyre!("Failed to update element"))?;
             log::trace!("Adding {:?} to {:?}", added, cur);
             *self
                 .time_account
@@ -434,6 +430,24 @@ impl TimeBalance {
         }
 
         Ok(())
+    }
+
+    /// Calculate total overhours.
+    pub fn calculate_overhours(&self) -> Option<Duration> {
+        if let Some(daily) = self.config.as_ref().unwrap_or_default().daily_hours {
+            let daily = Duration::hours(daily as i64);
+            let hours = self
+                .time_account
+                .iter()
+                .fold(Duration::zero(), |mut acc, (_, v)| {
+                    let dur: Duration = v.into();
+                    acc = acc + dur - daily;
+                    acc
+                });
+            Some(hours)
+        } else {
+            None
+        }
     }
 }
 
@@ -638,7 +652,7 @@ mod tests {
 
     fn add_times(balance: &mut TimeBalance, dt: DateTime<Utc>, dur: i64) {
         balance
-            .start(dt - Duration::seconds(10 + dur))
+            .start(dt - Duration::minutes(dur))
             .expect("starting works");
         balance.stop(dt).expect("stopping works");
     }
@@ -647,10 +661,10 @@ mod tests {
     fn canocicalize_works() {
         let mut balance = TimeBalance::new();
         let now = Utc.with_ymd_and_hms(2022, 1, 12, 1, 20, 30).unwrap();
-        add_times(&mut balance, now, 0);
-        add_times(&mut balance, now + Duration::seconds(10), 2);
-        add_times(&mut balance, now + Duration::seconds(20), 4);
-        add_times(&mut balance, now + Duration::seconds(30), 8);
+        add_times(&mut balance, now, 10);
+        add_times(&mut balance, now + Duration::seconds(10), 12);
+        add_times(&mut balance, now + Duration::seconds(20), 14);
+        add_times(&mut balance, now + Duration::seconds(30), 18);
         assert_eq!(balance.time_account.len(), 4);
         balance.canocicalize().expect("Works");
         assert_eq!(balance.time_account.len(), 1);
@@ -661,6 +675,34 @@ mod tests {
                 acc = acc.checked_add(&v.into()).unwrap();
                 acc
             });
-        assert_eq!(sum, Duration::seconds(54));
+        assert_eq!(sum, Duration::minutes(54));
+    }
+
+    #[test]
+    fn overhours_work() {
+        let mut balance = TimeBalance::new();
+        balance.config = Some(Config {
+            daily_hours: Some(1),
+            ..Default::default()
+        });
+
+        let now = Utc.with_ymd_and_hms(2022, 1, 12, 1, 20, 30).unwrap();
+        add_times(&mut balance, now, 70);
+        log::trace!("balance: {:?}", balance);
+        let overhours = balance.calculate_overhours();
+        assert_eq!(overhours, Some(Duration::minutes(10)));
+
+        add_times(&mut balance, now + Duration::seconds(10), 12);
+        balance.canocicalize().expect("canocicalize works");
+        let overhours = balance.calculate_overhours();
+        assert_eq!(overhours, Some(Duration::minutes(22)));
+
+        add_times(&mut balance, now - Duration::days(20), 64);
+        let overhours = balance.calculate_overhours();
+        assert_eq!(overhours, Some(Duration::minutes(26)));
+
+        add_times(&mut balance, now + Duration::days(30), 58);
+        let overhours = balance.calculate_overhours();
+        assert_eq!(overhours, Some(Duration::minutes(24)));
     }
 }

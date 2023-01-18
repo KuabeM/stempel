@@ -148,7 +148,7 @@ fn show_state(balance: &TimeBalance) {
                 acc + dur.clone().into()
             });
         log::trace!(
-            "Prevously worked hours {:?}, remaining: {:?}",
+            "Previously worked hours {:?}, remaining: {:?}",
             daily_range,
             remaining
         );
@@ -165,5 +165,12 @@ fn show_state(balance: &TimeBalance) {
                 remaining.num_minutes() % 60,
             );
         }
+    }
+    if let Some(hours) = balance.calculate_overhours() {
+        println!(
+            "You have total overhours of {:02}:{:02}h",
+            hours.num_hours(),
+            hours.num_minutes() % 60
+        );
     }
 }
