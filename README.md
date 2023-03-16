@@ -46,6 +46,15 @@ Available subcommands are:
     * number of months printed by the statistic command
     * number of hours to work per day
 
+# Completions
+
+Run `stempel completions --shell <shell>` to get a shell completion file, e.g. `stempel completions
+--shell zsh` for zsh. Source this file according to your specific shell.
+
+```zsh
+source <(stempel completions --shell zsh)
+```
+
 ### Options:
 
 #### `--offset`

@@ -52,6 +52,13 @@ fn run() -> color_eyre::Result<()> {
             debug!("Configure, stored in {:?}", storage);
             commands::config::configure(storage)?;
         }
+        Commands::Completions { shell } => {
+            debug!("Generating shell completions for {}", shell);
+            let mut app = <Cli as clap::CommandFactory>::command();
+            let mut sink = std::io::stdout();
+            let name = app.get_name().to_string();
+            clap_complete::generate(shell, &mut app, name, &mut sink);
+        }
     };
 
     Ok(())
