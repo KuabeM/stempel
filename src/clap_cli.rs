@@ -39,6 +39,12 @@ pub enum Commands {
     Migrate,
     /// Configure how stempel displays things.
     Configure,
+    /// Print shell completions.
+    Completions {
+        #[clap(long)]
+        /// Provide the `shell` for which to generate the completion script.
+        shell: clap_complete::Shell,
+    },
 }
 
 #[derive(Subcommand, Debug)]
