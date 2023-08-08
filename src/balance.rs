@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fs::{File, OpenOptions};
 use std::ops::Add;
+use std::ops::Sub;
 use std::path::Path;
 use std::{
     collections::BTreeMap,
@@ -443,6 +444,17 @@ impl TimeBalance {
         } else {
             None
         }
+    }
+
+    pub fn avg_start_time(&self) -> Option<NaiveTime> {
+        let total_secs = self.time_account.iter().fold(0, |mut acc, (stop, dur)| {
+            let start = stop.sub(Into::<Duration>::into(dur));
+            let secs = start.num_seconds_from_midnight();
+            acc += secs;
+            acc
+        });
+        let avg_secs = total_secs / (self.time_account.len() as u32);
+        NaiveTime::from_num_seconds_from_midnight_opt(avg_secs, 0)
     }
 }
 

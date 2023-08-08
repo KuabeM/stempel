@@ -6,7 +6,7 @@ use crate::balance::{Config, DurationDef, TimeBalance};
 
 use crate::errors::*;
 use crate::month;
-use chrono::{DateTime, Datelike, Duration, Local, Month, Utc};
+use chrono::{DateTime, Datelike, Duration, Local, Month, Utc, NaiveDate, NaiveDateTime};
 use colored::*;
 use itertools::Itertools;
 use num_traits::FromPrimitive;
@@ -33,6 +33,7 @@ pub fn stats<P: AsRef<Path>>(storage: P, month: Option<month::Month>) -> Result<
 
     println!();
     show_state(&balance);
+    avg_start_time(&balance)?;
 
     Ok(())
 }
@@ -173,4 +174,14 @@ fn show_state(balance: &TimeBalance) {
             hours.num_minutes() % 60
         );
     }
+}
+
+fn avg_start_time(balance: &TimeBalance) -> Result<()> {
+    if let Some(avg_time) = balance.avg_start_time() {
+        let date = Utc::now().date_naive();
+        let utc_time = NaiveDateTime::new(date, avg_time);
+        let local_time = utc_time.and_local_timezone(Local).unwrap();
+        println!("Average start time: {}", local_time.format("%H:%M:%S"));
+    }
+    Ok(())
 }
