@@ -9,6 +9,7 @@ description = "Track the time you spent working"
 categories = ["command-line-utilities"]
 keywords = ["time", "tracking", "management", "clock", "punch"]
 repository = "https://github.com/KuabeM/stempel"
+homepage = "https://github.com/KuabeM/stempel"
 
 exclude = [".github/*"]
 

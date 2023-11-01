@@ -2,6 +2,7 @@
 
 [![Build](https://img.shields.io/github/actions/workflow/status/KuabeM/stempel/build_master.yml)](https://github.com/KuabeM/stempel/actions?query=workflow%3Abuild-master)
 [![Crates.io](https://img.shields.io/crates/v/stempel.svg)](https://crates.io/crates/stempel)
+[![AUR](https://img.shields.io/aur/version/stempel-bin)](https://aur.archlinux.org/packages/stempel-bin)
 
 Small utility to store and calculate the time spent at work.
 
