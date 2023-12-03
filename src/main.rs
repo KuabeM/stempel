@@ -25,17 +25,13 @@ fn run() -> color_eyre::Result<()> {
             debug!("Stop at {:?}, store in {:?}", time_pt, storage);
             commands::control::stop(storage, time_pt)?;
         }
-        Commands::Break(startstop) => {
-            let (is_start, time) = match startstop {
-                clap_cli::StartStop::Start(t) => (true, t.time()),
-                clap_cli::StartStop::Stop(t) => (false, t.time()),
-            };
-            debug!("Break at {}, store in {:?}", time, storage);
-            match is_start {
-                true => commands::control::start_break(storage, time)?,
-                false => commands::control::stop_break(storage, time)?,
-            };
-        }
+        Commands::Break(startstop) => match startstop {
+            clap_cli::StartStop::Start(t) => {
+                commands::control::start_break(storage, t.time(), true)?
+            }
+            clap_cli::StartStop::Stop(t) => commands::control::stop_break(storage, t.time(), true)?,
+            clap_cli::StartStop::Duration { dur } => commands::control::take_break(storage, dur)?,
+        },
         Commands::Cancel => {
             debug!("Cancel");
             commands::control::cancel(storage)?;

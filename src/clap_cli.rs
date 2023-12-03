@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 pub use clap::Parser;
 use clap::{Args, Subcommand};
 use stempel::{
-    delta::{parse_offset, parse_time},
+    delta::{parse_duration, parse_offset, parse_time},
     month::Month,
 };
 
@@ -53,6 +53,12 @@ pub enum StartStop {
     Start(Timings),
     /// Stop a break, either now or based on flags.
     Stop(Timings),
+    /// A duration of a break in format `HH:MM`.
+    #[command(alias = "dur")]
+    Duration {
+        #[arg(value_parser = parse_duration)]
+        dur: chrono::Duration,
+    },
 }
 
 #[derive(Debug, Args, Clone)]
@@ -61,6 +67,16 @@ pub struct Timings {
     #[arg(short, long, conflicts_with = "time", value_parser = parse_offset, default_value = "0s+")]
     offset: DateTime<Utc>,
     /// An actual timepoint for starting or stopping an action in format `HH:MM`
+    #[arg(short, long, conflicts_with = "offset", value_parser = parse_time)]
+    time: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Args, Clone)]
+pub struct BreakTypes {
+    /// Offset to current time in format `XX[h|m|s][+-]`.
+    #[arg(short, long, conflicts_with = "time", value_parser = parse_offset, default_value = "0s+")]
+    offset: DateTime<Utc>,
+    /// An actual timepoint for starting or stopping an action in format `HH:MM`.
     #[arg(short, long, conflicts_with = "offset", value_parser = parse_time)]
     time: Option<DateTime<Utc>>,
 }
