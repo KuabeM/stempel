@@ -3,9 +3,9 @@
 use crate::balance::TimeBalance;
 
 use crate::errors::*;
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Duration, Local, Utc};
 use colored::*;
-use std::{convert::TryFrom, path::Path};
+use std::{convert::TryFrom, ops::Add, path::Path};
 
 /// Handles the start of a working period and breaks called by subcommand
 /// `start`.
@@ -70,14 +70,16 @@ pub fn cancel<P: AsRef<Path>>(storage: P) -> Result<()> {
 ///
 /// Handler of `break stop` subcommand. `storage` is the json storage file.
 /// Throws an error if there is no stared break in the database.
-pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()> {
+pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>, verbose: bool) -> Result<()> {
     let mut balance = TimeBalance::from_file(&storage, false)?;
     let dur = balance.finish_break(time)?;
-    println!(
-        "You had a break for {}:{:02}h. Way to go!",
-        dur.num_hours(),
-        dur.num_minutes() % 60
-    );
+    if verbose {
+        println!(
+            "You had a break for {}:{:02}h. Way to go!",
+            dur.num_hours(),
+            dur.num_minutes() % 60
+        );
+    }
     balance.to_file(&storage)?;
     Ok(())
 }
@@ -86,16 +88,33 @@ pub fn stop_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()>
 ///
 /// Handler of the `break start` subcommand. `storage` is the database file.
 /// Throws an error if there is no start entry in the database.
-pub fn start_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>) -> Result<()> {
+pub fn start_break<P: AsRef<Path>>(storage: P, time: DateTime<Utc>, verbose: bool) -> Result<()> {
     let mut balance = TimeBalance::from_file(&storage, false)?;
     let dur = balance.start_break(time)?;
-    println!(
-        "Started a break after working {}:{:02}h.",
-        dur.num_hours(),
-        dur.num_minutes() % 60
-    );
+    if verbose {
+        println!(
+            "Started a break after working {}:{:02}h.",
+            dur.num_hours(),
+            dur.num_minutes() % 60
+        );
+    }
     balance.to_file(storage)?;
     Ok(())
+}
+
+/// Add a full 'break' by adding a `break` entry to the database of length `duration`.
+///
+/// Handler of the `break dur` subcommand. `storage` is the database file.
+pub fn take_break<P: AsRef<Path>>(storage: P, duration: Duration) -> Result<()> {
+    let now = chrono::Utc::now();
+    println!(
+        "Taking a break for {}:{}h.",
+        duration.num_hours(),
+        duration.num_minutes() % 60
+    );
+    start_break(&storage, now, false)?;
+    let end = now.add(duration);
+    stop_break(&storage, end, false)
 }
 
 pub fn migrate<P: AsRef<Path>>(path: P) -> Result<()> {

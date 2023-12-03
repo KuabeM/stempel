@@ -1,5 +1,5 @@
 use crate::errors::*;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Timelike, Utc};
 
 pub fn parse_offset(src: &str) -> Result<DateTime<Utc>> {
     let sign_pos = src.ends_with('+');
@@ -31,6 +31,18 @@ pub fn parse_time(src: &str) -> Result<DateTime<Utc>> {
     let utc = DateTime::<Utc>::from(local);
     log::trace!("Deserialized {} to a time point {}", src, date_time);
     Ok(utc)
+}
+
+pub fn parse_duration(src: &str) -> Result<Duration> {
+    let time = chrono::NaiveTime::parse_from_str(src, "%H:%M")?;
+    let duration =
+        chrono::Duration::hours(time.hour().into()) + Duration::minutes(time.minute().into());
+    log::trace!(
+        "Deserialized {} to a duration of {} min",
+        src,
+        duration.num_minutes()
+    );
+    Ok(duration)
 }
 
 #[cfg(test)]
@@ -183,5 +195,14 @@ mod tests {
             parse_time("27:01").unwrap_err().to_string(),
             "input is out of range"
         );
+    }
+
+    #[test]
+    fn deserialize_duration() {
+        assert_eq!(parse_duration("0:45").unwrap(), Duration::minutes(45));
+        assert_eq!(parse_duration("1:45").unwrap(), Duration::minutes(105));
+        assert_eq!(parse_duration("0:5").unwrap(), Duration::minutes(5));
+        assert_eq!(parse_duration("10:0").unwrap(), Duration::minutes(600));
+        assert_eq!(parse_duration("0:45").unwrap(), Duration::minutes(45));
     }
 }
