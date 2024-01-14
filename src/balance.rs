@@ -16,6 +16,7 @@ use std::{
     io::{BufReader, Read, Write},
 };
 
+use crate::cli_input::YesNo;
 use crate::errors::*;
 
 use crate::storage::WorkStorage;
@@ -178,7 +179,24 @@ impl TimeBalance {
             ));
         }
         let breaks = self.accumulate_breaks();
-        let duration = time
+        let stop = if start.naive_local().date() != time.naive_local().date() {
+            println!(
+                "You started working on {}, do you really want to stop today? [y/N]",
+                start.format("%D.%M")
+            );
+            match YesNo::wait_for_decision()? {
+                YesNo::Yes => time,
+                YesNo::No => {
+                    let time_stamp = time.time();
+                    let date = start.naive_utc().date();
+                    let stop = date.and_time(time_stamp);
+                    stop.and_utc()
+                }
+            }
+        } else {
+            time
+        };
+        let duration = stop
             .signed_duration_since(start)
             .checked_sub(&breaks)
             .ok_or_else(|| usage_err!("Your break was longer than your work"))?;
