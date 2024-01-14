@@ -509,7 +509,7 @@ mod tests {
             .unwrap()
             .and_hms_opt(14, 19, 21)
             .unwrap();
-        let utc_dt = DateTime::from_utc(naive, chrono::Utc);
+        let utc_dt = DateTime::from_naive_utc_and_offset(naive, chrono::Utc);
         let dur: DurationDef = Duration::seconds(10).into();
         let input = r#"{"start":null,"breaking":null,"breaks":[],"account":{""#.to_string()
             + &utc_dt.to_rfc3339_opts(SecondsFormat::Secs, true)
@@ -529,7 +529,7 @@ mod tests {
             .unwrap()
             .and_hms_opt(14, 19, 21)
             .unwrap();
-        let utc_dt = DateTime::from_utc(naive, chrono::Utc);
+        let utc_dt = DateTime::from_naive_utc_and_offset(naive, chrono::Utc);
         let dur = Duration::seconds(10).into();
         balance.insert(utc_dt, dur);
 
