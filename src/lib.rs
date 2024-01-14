@@ -4,6 +4,7 @@
 pub mod errors;
 
 mod balance;
+mod cli_input;
 pub mod commands;
 pub mod delta;
 pub mod month;
