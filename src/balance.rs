@@ -200,7 +200,7 @@ impl TimeBalance {
             .signed_duration_since(start)
             .checked_sub(&breaks)
             .ok_or_else(|| usage_err!("Your break was longer than your work"))?;
-        self.insert(time, duration.into());
+        self.insert(stop, duration.into());
         self.reset();
         Ok(duration)
     }
