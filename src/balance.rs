@@ -11,6 +11,7 @@ use std::convert::TryFrom;
 use std::fmt::Display;
 use std::fs::{File, OpenOptions};
 use std::ops::Add;
+use std::ops::AddAssign;
 use std::path::Path;
 use std::{
     collections::BTreeMap,
@@ -68,6 +69,20 @@ pub(crate) struct DurationDef {
     inner: Duration,
 }
 
+impl DurationDef {
+    pub fn zero() -> Self {
+        Self {
+            inner: Duration::zero(),
+        }
+    }
+}
+
+impl AsRef<Duration> for DurationDef {
+    fn as_ref(&self) -> &Duration {
+        &self.inner
+    }
+}
+
 impl Display for DurationDef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -84,6 +99,12 @@ impl Add for DurationDef {
     fn add(self, rhs: Self) -> Self::Output {
         let dur = self.inner + rhs.into();
         dur.into()
+    }
+}
+
+impl AddAssign for DurationDef {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = self.add(rhs)
     }
 }
 
@@ -334,6 +355,18 @@ impl TimeBalance {
             .ok_or(eyre!("Could not construct range"))?
             .with_timezone(&Utc);
         Ok(self.range(start, end))
+    }
+
+    /// Extract all entries from the week of `date`.
+    pub fn week_entries(
+        &self,
+        day: NaiveDate,
+    ) -> impl Iterator<Item = (&DateTime<Utc>, &DurationDef)> {
+        log::trace!("Entries in week of {:?}", day);
+        let week = day.iso_week().week();
+        self.time_account
+            .iter()
+            .filter(move |(d, _)| d.iso_week().week() == week)
     }
 
     /// Insert a start time and the corresponding duration into map.
