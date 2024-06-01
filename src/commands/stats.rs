@@ -29,6 +29,8 @@ pub fn stats<P: AsRef<Path>>(storage: P, month: Option<month::Month>) -> Result<
         let history = balance.config.as_ref().unwrap_or(&default_cfg).month_stats;
         println!("Here are your stats for the last {} months:", history);
         stats_last_month(&balance, year, m, history)?;
+        println!("\n");
+        weekly_stats(&balance)?;
     }
 
     println!();
@@ -57,6 +59,20 @@ fn stats_last_month(balance: &TimeBalance, year: i32, month: Month, history: u8)
     for (y, m) in years.iter().zip(months) {
         monthly_stats(balance, *y, m)?;
     }
+    Ok(())
+}
+
+/// Weekly stats
+fn weekly_stats(balance: &TimeBalance) -> Result<()> {
+    let month_entries: Vec<(_, _)> = balance.week_entries(Local::now().date_naive()).collect();
+    let mut sum = DurationDef::zero();
+    for (start, dur) in month_entries {
+        //let dur: chrono::Duration = dur.into();
+        sum += *dur;
+        println!("{:9} {}", start.format("%A"), dur);
+    }
+    println!("----------------");
+    println!("Total    {}", sum);
     Ok(())
 }
 
