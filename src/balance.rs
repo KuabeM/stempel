@@ -8,6 +8,7 @@ use chrono::Duration;
 use serde::{Deserialize, Serialize};
 
 use std::convert::TryFrom;
+use std::fmt::Display;
 use std::fs::{File, OpenOptions};
 use std::ops::Add;
 use std::path::Path;
@@ -59,18 +60,23 @@ impl From<DurationDef> for Duration {
     }
 }
 
-impl ToString for DurationDef {
-    fn to_string(&self) -> String {
-        self.inner.to_string()
-    }
-}
-
 /// Wrapper around chrono::Duration for serde support
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy)]
 pub(crate) struct DurationDef {
     #[serde(flatten)]
     #[serde(with = "ChronoDuration")]
     inner: Duration,
+}
+
+impl Display for DurationDef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:02}:{:02}h",
+            self.inner.num_hours(),
+            self.inner.num_minutes() % 60
+        )
+    }
 }
 
 impl Add for DurationDef {
@@ -182,7 +188,7 @@ impl TimeBalance {
         let stop = if start.naive_local().date() != time.naive_local().date() {
             println!(
                 "You started working on {}, do you really want to stop today? [y/N]",
-                start.format("%D.%M")
+                start.format("%d.%m.")
             );
             match YesNo::wait_for_decision()? {
                 YesNo::Yes => time,
@@ -628,7 +634,10 @@ mod tests {
             .checked_add(&Duration::seconds(1))
             .expect("adding works");
         let durdef = DurationDef::from(dur);
-        assert_eq!(durdef.to_string(), dur.to_string());
+        assert_eq!(
+            durdef.to_string(),
+            format!("{:02}:{:02}h", dur.num_hours(), dur.num_minutes() % 60)
+        );
 
         let dur_back = Duration::from(&durdef);
         assert_eq!(dur_back, durdef.into());

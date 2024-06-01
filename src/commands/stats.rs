@@ -76,15 +76,12 @@ fn monthly_stats(balance: &TimeBalance, year: i32, month: Month) -> Result<()> {
             }
             cur_w
         }) {
-            let dur = group.fold(chrono::Duration::zero(), |dur, (_, d)| {
-                dur.checked_add(&d.into()).unwrap()
-            });
-            println!(
-                "    Week {:2}: {:02}:{:02}h",
-                week,
-                dur.num_hours(),
-                dur.num_minutes() % 60
-            );
+            let dur: DurationDef = group
+                .fold(chrono::Duration::zero(), |dur, (_, d)| {
+                    dur.checked_add(&d.into()).unwrap()
+                })
+                .into();
+            println!("    Week {:2}: {:02}", week, dur);
         }
     }
     Ok(())
@@ -92,18 +89,18 @@ fn monthly_stats(balance: &TimeBalance, year: i32, month: Month) -> Result<()> {
 
 /// Print current state of started work, running and finished breaks.
 fn show_state(balance: &TimeBalance) {
+    let break_state = balance.break_state();
     let dur = if let Some((dur, start)) = balance.start_state() {
+        let total: DurationDef = (dur - break_state.sum).into();
         println!(
-            "Started at {}, worked {:02}:{:02}h since then.",
+            "Started at {}, worked {} since then.",
             start.with_timezone(&chrono::Local).format("%H:%M"),
-            dur.num_hours(),
-            dur.num_minutes() % 60
+            total
         );
         dur
     } else {
         Duration::zero()
     };
-    let break_state = balance.break_state();
     let break_str = break_state
         .breaks
         .iter()
