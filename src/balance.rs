@@ -112,6 +112,7 @@ impl AddAssign for DurationDef {
 pub struct Config {
     pub month_stats: u8,
     pub daily_hours: Option<u8>,
+    pub weekly_stats: Option<bool>,
 }
 
 impl Default for Config {
@@ -119,6 +120,7 @@ impl Default for Config {
         Self {
             month_stats: 2,
             daily_hours: None,
+            weekly_stats: None,
         }
     }
 }
@@ -128,6 +130,7 @@ impl Default for &Config {
         &Config {
             month_stats: 2,
             daily_hours: None,
+            weekly_stats: None,
         }
     }
 }

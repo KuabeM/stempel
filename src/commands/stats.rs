@@ -27,9 +27,10 @@ pub fn stats<P: AsRef<Path>>(storage: P, month: Option<month::Month>) -> Result<
             .ok_or_else(|| eyre!("Failed to parse current month"))?;
         let default_cfg = Config::default();
         let history = balance.config.as_ref().unwrap_or(&default_cfg).month_stats;
-        println!("Here are your stats for the last {} months:", history);
-        stats_last_month(&balance, year, m, history)?;
-        println!("\n");
+        if history > 0 {
+            println!("Here are your stats for the last {} months:", history);
+            stats_last_month(&balance, year, m, history)?;
+        }
         weekly_stats(&balance)?;
     }
 
@@ -64,15 +65,24 @@ fn stats_last_month(balance: &TimeBalance, year: i32, month: Month, history: u8)
 
 /// Weekly stats
 fn weekly_stats(balance: &TimeBalance) -> Result<()> {
-    let month_entries: Vec<(_, _)> = balance.week_entries(Local::now().date_naive()).collect();
-    let mut sum = DurationDef::zero();
-    for (start, dur) in month_entries {
-        //let dur: chrono::Duration = dur.into();
-        sum += *dur;
-        println!("{:9} {}", start.format("%A"), dur);
+    if balance
+        .config
+        .as_ref()
+        .unwrap_or_default()
+        .weekly_stats
+        .unwrap_or_default()
+    {
+        println!("\n");
+        let month_entries: Vec<(_, _)> = balance.week_entries(Local::now().date_naive()).collect();
+        let mut sum = DurationDef::zero();
+        for (start, dur) in month_entries {
+            //let dur: chrono::Duration = dur.into();
+            sum += *dur;
+            println!("{:9} {}", start.format("%A"), dur);
+        }
+        println!("----------------");
+        println!("Total    {}", sum);
     }
-    println!("----------------");
-    println!("Total    {}", sum);
     Ok(())
 }
 

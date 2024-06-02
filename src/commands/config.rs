@@ -45,10 +45,20 @@ pub fn configure<P: AsRef<Path>>(storage: P) -> Result<()> {
         .read_line(&mut input)
         .wrap_err("Failed to read line from stdin")?;
     let daily_hours = input.trim().parse::<u8>().unwrap_or(daily_hours);
+
+    let weekly_stats = cfg.weekly_stats.unwrap_or_default();
+    println!("    Print daily stats [y/n]: ({})", weekly_stats);
+    input.clear();
+    std::io::stdin()
+        .read_line(&mut input)
+        .wrap_err("Failed to read line from stdin")?;
+    let weekly_stats = input.trim().contains('y');
+
     let cfg = Config {
         month_stats: month_history,
         daily_hours: Some(daily_hours),
-        // ..cfg
+        weekly_stats: Some(weekly_stats),
+        //..cfg
     };
     log::trace!("Months to display {}", cfg.month_stats);
     log::trace!("Daily working hours {:?}", cfg.daily_hours);
