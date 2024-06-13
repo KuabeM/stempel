@@ -365,10 +365,12 @@ impl TimeBalance {
         &self,
         day: NaiveDate,
     ) -> impl Iterator<Item = (&DateTime<Utc>, &DurationDef)> {
-        log::trace!("Entries in week of {:?}", day);
         let week = day.iso_week().week();
+        let (_, year) = day.year_ce();
+        log::trace!("Entries in week {}, based on day {:?}", week, day);
         self.time_account
             .iter()
+            .filter(move |(d, _)| d.year() == year as i32)
             .filter(move |(d, _)| d.iso_week().week() == week)
     }
 

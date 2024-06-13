@@ -73,15 +73,14 @@ fn weekly_stats(balance: &TimeBalance) -> Result<()> {
         .unwrap_or_default()
     {
         println!("\n");
-        let month_entries: Vec<(_, _)> = balance.week_entries(Local::now().date_naive()).collect();
+        let week_entries: Vec<(_, _)> = balance.week_entries(Local::now().date_naive()).collect();
         let mut sum = DurationDef::zero();
-        for (start, dur) in month_entries {
-            //let dur: chrono::Duration = dur.into();
+        for (start, dur) in week_entries {
             sum += *dur;
             println!("{:9} {}", start.format("%A"), dur);
         }
         println!("----------------");
-        println!("Total    {}", sum);
+        println!("Total     {}", sum);
     }
     Ok(())
 }
